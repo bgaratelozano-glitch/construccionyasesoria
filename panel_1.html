@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Panel · Asesoría Inmobiliaria</title>
+<style>
+  :root{
+    --bg:#0f1720; --panel:#16212e; --panel2:#1d2b3a; --line:#2a3a4d;
+    --text:#e8eef5; --muted:#93a4b8; --brand:#2d7ff9; --brand2:#1e5fd0;
+    --ok:#1fb26b; --warn:#e0a316; --bad:#e0574b; --chip:#22344a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--text);font-size:15px;line-height:1.45}
+  a{color:var(--brand)}
+  button{font:inherit;cursor:pointer;border:none;border-radius:9px;padding:9px 14px;
+    background:var(--brand);color:#fff;font-weight:600}
+  button:hover{background:var(--brand2)}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--text);font-weight:500}
+  button.ghost:hover{background:var(--panel2)}
+  button.danger{background:var(--bad)}
+  button.small{padding:6px 10px;font-size:13px}
+  input,select,textarea{width:100%;padding:9px 11px;border-radius:9px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--text);font:inherit}
+  input:focus,select,textarea:focus{outline:2px solid var(--brand)}
+  label{display:block;font-size:12.5px;color:var(--muted);margin:0 0 5px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .row>div{flex:1;min-width:140px}
+  .hidden{display:none !important}
+  .muted{color:var(--muted)}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;background:var(--chip)}
+  .pill.ok{background:rgba(31,178,107,.18);color:#5fe3a3}
+  .pill.warn{background:rgba(224,163,22,.18);color:#f2c65a}
+  .pill.bad{background:rgba(224,87,75,.18);color:#f29187}
+  .pill.info{background:rgba(45,127,249,.18);color:#8fbcff}
+
+  /* Login */
+  #login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px}
+  #login .card{width:100%;max-width:380px}
+  .logo{font-weight:800;font-size:20px;letter-spacing:.3px}
+  .logo small{display:block;font-weight:500;color:var(--muted);font-size:12px;letter-spacing:0}
+
+  /* App shell */
+  header{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:14px;
+    padding:12px 18px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  header .who{margin-left:auto;text-align:right;font-size:13px}
+  nav{display:flex;gap:6px;padding:10px 18px;background:var(--panel);border-bottom:1px solid var(--line);
+    position:sticky;top:57px;z-index:4;flex-wrap:wrap}
+  nav button{background:transparent;color:var(--muted);font-weight:600;border-radius:9px}
+  nav button.active{background:var(--brand);color:#fff}
+  main{max-width:1100px;margin:0 auto;padding:20px 18px 60px}
+  .bar{display:flex;align-items:center;gap:12px;margin:0 0 16px;flex-wrap:wrap}
+  .bar h2{margin:0;font-size:19px}
+  .bar .sp{margin-left:auto}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+  .prop{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+  .prop .thumb{aspect-ratio:16/10;background:var(--panel2) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px}
+  .prop .body{padding:12px;display:flex;flex-direction:column;gap:6px;flex:1}
+  .prop .title{font-weight:700}
+  .prop .price{font-weight:700;color:#8fbcff}
+  .prop .acts{display:flex;gap:8px;margin-top:auto;padding-top:8px;flex-wrap:wrap}
+
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:10px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.4px}
+  .tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+
+  /* Modal */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-start;
+    justify-content:center;padding:24px;overflow:auto;z-index:20}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;width:100%;max-width:640px}
+  .modal h3{margin:0 0 16px}
+  .field{margin-bottom:12px}
+  .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .thumbs .t{position:relative;width:74px;height:74px;border-radius:9px;background:var(--panel2) center/cover;border:1px solid var(--line)}
+  .thumbs .t button{position:absolute;top:-8px;right:-8px;width:22px;height:22px;padding:0;border-radius:50%;background:var(--bad);font-size:12px;line-height:1}
+
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111c28;
+    border:1px solid var(--line);padding:11px 18px;border-radius:10px;z-index:50;opacity:0;transition:.25s;pointer-events:none}
+  .toast.show{opacity:1}
+  .toast.bad{border-color:var(--bad)}
+  .empty{padding:40px;text-align:center;color:var(--muted)}
+  .cfgwarn{background:rgba(224,163,22,.12);border:1px solid var(--warn);color:#f2c65a;
+    padding:12px 16px;border-radius:10px;margin:16px}
+</style>
+</head>
+<body>
+
+<!-- ===================================================================
+     CONFIGURACIÓN — llena estos dos valores (ver la guía)
+     Supabase → Project Settings → API:
+       • Project URL           → SUPABASE_URL
+       • Project API keys: anon public → SUPABASE_ANON_KEY
+     La llave "anon" es pública y SEGURA para el navegador: está protegida
+     por las reglas RLS. NUNCA pongas aquí la llave service_role.
+==================================================================== -->
+<script>
+  const SUPABASE_URL      = "https://yqymyyhinstfffozvhho.supabase.co";     // ej: https://abcd1234.supabase.co
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxeW15eWhpbnN0ZmZmb3p2aGhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4Mjg3MjYsImV4cCI6MjEwMDQwNDcyNn0.otKzvJf3NR6rse6WAteQyax7bYVtCEobn88kZHlHLAU"; // empieza con eyJ...
+</script>
+
+<!-- Login -->
+<div id="login">
+  <div class="card">
+    <div class="logo">Asesoría Inmobiliaria<small>Panel de administración · INTEGRA AI DYNAMICS</small></div>
+    <div id="cfgwarn" class="cfgwarn hidden">⚠️ Falta configurar SUPABASE_URL y SUPABASE_ANON_KEY en el archivo.</div>
+    <form id="loginForm" style="margin-top:20px">
+      <div class="field"><label>Correo</label><input type="email" id="email" required autocomplete="username"/></div>
+      <div class="field"><label>Contraseña</label><input type="password" id="password" required autocomplete="current-password"/></div>
+      <div id="loginErr" class="pill bad hidden" style="margin-bottom:12px"></div>
+      <button type="submit" style="width:100%">Entrar</button>
+    </form>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app" class="hidden">
+  <header>
+    <div class="logo" style="font-size:16px">Asesoría Inmobiliaria<small>Panel de administración</small></div>
+    <div class="who">
+      <div id="whoName">—</div>
+      <div class="muted"><span id="whoRole" class="pill info"></span></div>
+    </div>
+    <button class="ghost small" id="logout">Salir</button>
+  </header>
+  <nav>
+    <button data-tab="inventario" class="active">🏠 Inventario</button>
+    <button data-tab="leads">🎯 Leads</button>
+    <button data-tab="posts">📝 Posts</button>
+  </nav>
+  <main>
+    <!-- INVENTARIO -->
+    <section id="tab-inventario">
+      <div class="bar">
+        <h2>Inventario</h2>
+        <span id="invCount" class="muted"></span>
+        <span class="sp"></span>
+        <select id="invFiltro" style="width:auto"><option value="">Todas</option><option value="disponible">Disponibles</option><option value="vendida">Vendidas</option></select>
+        <button id="nuevaProp">+ Nueva propiedad</button>
+      </div>
+      <div id="invGrid" class="grid"></div>
+    </section>
+
+    <!-- LEADS -->
+    <section id="tab-leads" class="hidden">
+      <div class="bar">
+        <h2>Leads</h2>
+        <span id="leadCount" class="muted"></span>
+        <span class="sp"></span>
+        <select id="leadFiltro" style="width:auto">
+          <option value="">Todos</option><option value="nuevo">Nuevos</option>
+          <option value="calificado">Calificados</option><option value="contactado">Contactados</option>
+          <option value="cerrado">Cerrados</option>
+        </select>
+      </div>
+      <div class="tablewrap"><table id="leadTable">
+        <thead><tr><th>Fecha</th><th>Interés</th><th>Presupuesto</th><th>Terreno</th><th>WhatsApp</th><th>Origen</th><th>Estado</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
+
+    <!-- POSTS -->
+    <section id="tab-posts" class="hidden">
+      <div class="bar">
+        <h2>Posts</h2>
+        <span id="postCount" class="muted"></span>
+        <span class="sp"></span>
+        <select id="postFiltro" style="width:auto">
+          <option value="">Todos</option><option value="borrador">Borradores</option>
+          <option value="aprobado">Aprobados</option><option value="programado">Programados</option>
+          <option value="publicado">Publicados</option>
+        </select>
+      </div>
+      <div id="postList" class="grid"></div>
+    </section>
+  </main>
+</div>
+
+<!-- Modal propiedad -->
+<div id="propModal" class="overlay hidden">
+  <div class="modal">
+    <h3 id="propModalTitle">Nueva propiedad</h3>
+    <input type="hidden" id="p_id"/>
+    <div class="row">
+      <div class="field"><label>Tipo</label><select id="p_tipo"><option value="casa">Casa</option><option value="terreno">Terreno</option></select></div>
+      <div class="field"><label>Estatus</label><select id="p_estatus"><option value="disponible">Disponible</option><option value="vendida">Vendida</option></select></div>
+      <div class="field"><label>Generar posts con IA</label><select id="p_generar"><option value="true">Sí</option><option value="false">No</option></select></div>
+    </div>
+    <div class="field"><label>Título *</label><input id="p_titulo" placeholder="Ej. Casa en Fracc. Las Palmas"/></div>
+    <div class="field"><label>Descripción</label><textarea id="p_desc" rows="2" placeholder="Descripción cruda; la IA la convierte en copy"></textarea></div>
+    <div class="row">
+      <div class="field"><label>Precio (MXN)</label><input id="p_precio" type="number" step="0.01" placeholder="1500000"/></div>
+      <div class="field"><label>Colonia / Fracc.</label><input id="p_colonia"/></div>
+      <div class="field"><label>Ciudad</label><input id="p_ciudad" value="Río Bravo"/></div>
+    </div>
+    <div class="field"><label>Ubicación / referencia</label><input id="p_ubic" placeholder="Referencia general (no exacta)"/></div>
+    <div class="row">
+      <div class="field"><label>m² terreno</label><input id="p_m2t" type="number" step="0.01"/></div>
+      <div class="field"><label>m² construcción</label><input id="p_m2c" type="number" step="0.01"/></div>
+      <div class="field"><label>Recámaras</label><input id="p_rec" type="number"/></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Baños</label><input id="p_ban" type="number" step="0.5"/></div>
+      <div class="field"><label>Cocheras</label><input id="p_coch" type="number"/></div>
+      <div class="field"><label>WhatsApp</label><input id="p_wa" placeholder="8991669973"/></div>
+    </div>
+    <div class="field"><label>Características (separadas por coma)</label><input id="p_carac" placeholder="cocina integral, patio, 2 pisos"/></div>
+    <div class="field">
+      <label>Fotos <span class="muted">(la ⭐ marca la principal, que es la que usa el post)</span></label>
+      <input id="p_fotos" type="file" accept="image/*" multiple/>
+      <div id="p_thumbs" class="thumbs"></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button id="p_save">Guardar</button>
+      <button class="ghost" id="p_cancel">Cancelar</button>
+      <span class="sp"></span>
+      <button class="danger hidden" id="p_delete">Borrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal post -->
+<div id="postModal" class="overlay hidden">
+  <div class="modal">
+    <h3 id="postModalTitle">Editar post</h3>
+    <input type="hidden" id="pt_id"/>
+    <div class="row">
+      <div class="field"><label>Estado</label><select id="pt_estado">
+        <option value="borrador">Borrador</option>
+        <option value="aprobado">Aprobado</option>
+        <option value="programado">Programado</option>
+        <option value="publicado">Publicado</option>
+      </select></div>
+      <div class="field"><label>Plataforma</label><select id="pt_plataforma">
+        <option value="ambos">Ambos (FB + IG)</option>
+        <option value="fb">Facebook</option>
+        <option value="ig">Instagram</option>
+      </select></div>
+    </div>
+    <div class="field"><label>Texto del post</label><textarea id="pt_copy" rows="9" placeholder="Texto que se publicará"></textarea></div>
+    <div class="field"><label>Hashtags (separados por espacio o coma)</label><input id="pt_hashtags" placeholder="#RíoBravo #CasaNueva #BienesRaíces"/></div>
+    <div class="field"><label>Imagen del post (URL)</label><input id="pt_media" placeholder="https://..."/></div>
+    <div class="row" style="margin-top:8px">
+      <button id="pt_save">Guardar</button>
+      <button class="ghost" id="pt_cancel">Cancelar</button>
+      <span class="sp"></span>
+      <button class="danger" id="pt_delete">Borrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  "use strict";
+  const $ = s => document.querySelector(s);
+  const cfgOK = SUPABASE_URL.startsWith("http") && !SUPABASE_ANON_KEY.startsWith("PON_AQUI");
+  if(!cfgOK){ $("#cfgwarn").classList.remove("hidden"); }
+  const db = cfgOK ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+  let me = null;            // { id, nombre, rol }
+  let props = [];           // cache de propiedades
+  let editFotos = [];       // fotos (urls) en edición
+  let editFolder = null;    // carpeta de storage para la propiedad en edición
+
+  function toast(msg, bad){
+    const t=$("#toast"); t.textContent=msg; t.className="toast show"+(bad?" bad":"");
+    setTimeout(()=>t.className="toast",2600);
+  }
+  const money = n => (n==null||n==="")?"—":("$"+Number(n).toLocaleString("es-MX")+" MXN");
+  const esc = s => (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const fecha = s => s? new Date(s).toLocaleDateString("es-MX",{day:"2-digit",month:"short",year:"2-digit"}) : "—";
+
+  // ---------- AUTH ----------
+  $("#loginForm").addEventListener("submit", async e=>{
+    e.preventDefault();
+    $("#loginErr").classList.add("hidden");
+    if(!db){ return; }
+    const { error } = await db.auth.signInWithPassword({ email:$("#email").value.trim(), password:$("#password").value });
+    if(error){ $("#loginErr").textContent = "No se pudo entrar: "+error.message; $("#loginErr").classList.remove("hidden"); }
+  });
+  $("#logout").addEventListener("click", async ()=>{ await db.auth.signOut(); location.reload(); });
+
+  async function boot(){
+    if(!db) return;
+    const { data:{ session } } = await db.auth.getSession();
+    if(!session){ $("#login").classList.remove("hidden"); $("#app").classList.add("hidden"); return; }
+    const { data:perfil } = await db.from("perfiles").select("*").eq("id", session.user.id).single();
+    me = perfil || { id:session.user.id, nombre:session.user.email, rol:"asistente" };
+    $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
+    $("#whoName").textContent = me.nombre || session.user.email;
+    $("#whoRole").textContent = me.rol==="admin" ? "Dueño (admin)" : "Asistente";
+    document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("hidden", me.rol!=="admin"));
+    await Promise.all([loadInventario(), loadLeads(), loadPosts()]);
+  }
+  if(db){ db.auth.onAuthStateChange((_e,s)=>{ if(s) boot(); }); }
+
+  // ---------- NAV ----------
+  document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    ["inventario","leads","posts"].forEach(t=>$("#tab-"+t).classList.toggle("hidden", t!==b.dataset.tab));
+  }));
+
+  // ---------- INVENTARIO ----------
+  $("#invFiltro").addEventListener("change", renderInv);
+  $("#nuevaProp").addEventListener("click", ()=>openProp(null));
+
+  async function loadInventario(){
+    const { data, error } = await db.from("propiedades").select("*").order("created_at",{ascending:false});
+    if(error){ toast("Error cargando inventario: "+error.message,true); return; }
+    props = data||[]; renderInv();
+  }
+  function renderInv(){
+    const f=$("#invFiltro").value;
+    const list = props.filter(p=>!f || p.estatus===f);
+    $("#invCount").textContent = list.length+" propiedad"+(list.length===1?"":"es");
+    const g=$("#invGrid");
+    if(!list.length){ g.innerHTML='<div class="empty">Aún no hay propiedades. Da clic en “+ Nueva propiedad”.</div>'; return; }
+    g.innerHTML = list.map(p=>{
+      const foto=(p.fotos&&p.fotos[0])||"";
+      const est = p.estatus==="vendida" ? '<span class="pill bad">Vendida</span>' : '<span class="pill ok">Disponible</span>';
+      return `<div class="prop">
+        <div class="thumb" style="${foto?`background-image:url('${esc(foto)}')`:''}">${foto?'':'Sin foto'}</div>
+        <div class="body">
+          <div class="title">${esc(p.titulo||"(sin título)")}</div>
+          <div class="muted">${esc(p.tipo)} · ${esc(p.colonia||p.ciudad||"")}</div>
+          <div class="price">${money(p.precio)}</div>
+          <div>${est} ${p.recamaras?`<span class="pill">${p.recamaras} rec</span>`:''} ${p.m2_terreno?`<span class="pill">${p.m2_terreno} m²</span>`:''} ${p.generar_post===false?'<span class="pill">🚫 sin posts</span>':''}</div>
+          <div class="acts"><button class="ghost small" data-edit="${p.id}">Editar</button></div>
+        </div></div>`;
+    }).join("");
+    g.querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openProp(b.dataset.edit)));
+  }
+
+  function openProp(id){
+    const p = id ? props.find(x=>x.id===id) : null;
+    $("#propModalTitle").textContent = p ? "Editar propiedad" : "Nueva propiedad";
+    $("#p_id").value = p? p.id : "";
+    $("#p_tipo").value = p? (p.tipo||"casa"):"casa";
+    $("#p_estatus").value = p? (p.estatus||"disponible"):"disponible";
+    $("#p_generar").value = p? String(p.generar_post!==false) : "true";
+    $("#p_titulo").value = p? (p.titulo||""):"";
+    $("#p_desc").value = p? (p.descripcion_base||""):"";
+    $("#p_precio").value = p? (p.precio??""):"";
+    $("#p_colonia").value = p? (p.colonia||""):"";
+    $("#p_ciudad").value = p? (p.ciudad||"Río Bravo"):"Río Bravo";
+    $("#p_ubic").value = p? (p.ubicacion||""):"";
+    $("#p_m2t").value = p? (p.m2_terreno??""):"";
+    $("#p_m2c").value = p? (p.m2_construccion??""):"";
+    $("#p_rec").value = p? (p.recamaras??""):"";
+    $("#p_ban").value = p? (p.banos??""):"";
+    $("#p_coch").value = p? (p.cocheras??""):"";
+    $("#p_wa").value = p? (p.whatsapp||""):"";
+    $("#p_carac").value = p&&Array.isArray(p.caracteristicas)? p.caracteristicas.join(", "):"";
+    editFotos = p&&Array.isArray(p.fotos)? [...p.fotos]:[];
+    editFolder = p? p.id : crypto.randomUUID();
+    $("#p_fotos").value="";
+    renderThumbs();
+    $("#p_delete").classList.toggle("hidden", !p || me.rol!=="admin");
+    $("#propModal").classList.remove("hidden");
+  }
+  function renderThumbs(){
+    $("#p_thumbs").innerHTML = editFotos.map((u,i)=>`<div class="t" style="background-image:url('${esc(u)}')" title="${i===0?'Principal':'Hacer principal'}">
+        ${i===0?'<div style="position:absolute;bottom:-6px;left:-6px;background:var(--warn);color:#1a1200;font-size:10px;font-weight:700;padding:2px 6px;border-radius:20px">⭐ principal</div>':`<button data-star="${i}" style="left:-8px;right:auto;background:var(--warn);color:#1a1200">★</button>`}
+        <button data-rm="${i}">×</button>
+      </div>`).join("");
+    $("#p_thumbs").querySelectorAll("[data-rm]").forEach(b=>b.addEventListener("click",()=>{ editFotos.splice(+b.dataset.rm,1); renderThumbs(); }));
+    $("#p_thumbs").querySelectorAll("[data-star]").forEach(b=>b.addEventListener("click",()=>{ const i=+b.dataset.star; const [f]=editFotos.splice(i,1); editFotos.unshift(f); renderThumbs(); }));
+  }
+  $("#p_cancel").addEventListener("click", ()=>$("#propModal").classList.add("hidden"));
+  $("#p_fotos").addEventListener("change", async e=>{
+    const files=[...e.target.files]; if(!files.length) return;
+    toast("Subiendo "+files.length+" foto(s)…");
+    for(const file of files){
+      const ext=(file.name.split(".").pop()||"jpg").toLowerCase();
+      const path=`${editFolder}/${crypto.randomUUID()}.${ext}`;
+      const { error } = await db.storage.from("propiedades").upload(path, file, {upsert:true, contentType:file.type});
+      if(error){ toast("Error subiendo foto: "+error.message,true); continue; }
+      const { data:pub } = db.storage.from("propiedades").getPublicUrl(path);
+      editFotos.push(pub.publicUrl);
+    }
+    renderThumbs(); $("#p_fotos").value=""; toast("Fotos listas");
+  });
+  $("#p_save").addEventListener("click", async ()=>{
+    if(!$("#p_titulo").value.trim()){ toast("El título es obligatorio",true); return; }
+    const num = v => v===""?null:Number(v);
+    const carac = $("#p_carac").value.split(",").map(s=>s.trim()).filter(Boolean);
+    const payload = {
+      tipo:$("#p_tipo").value, estatus:$("#p_estatus").value, generar_post:$("#p_generar").value==="true", titulo:$("#p_titulo").value.trim(),
+      descripcion_base:$("#p_desc").value.trim()||null, precio:num($("#p_precio").value),
+      colonia:$("#p_colonia").value.trim()||null, ciudad:$("#p_ciudad").value.trim()||"Río Bravo",
+      ubicacion:$("#p_ubic").value.trim()||null, m2_terreno:num($("#p_m2t").value),
+      m2_construccion:num($("#p_m2c").value), recamaras:num($("#p_rec").value),
+      banos:num($("#p_ban").value), cocheras:num($("#p_coch").value),
+      whatsapp:$("#p_wa").value.trim()||null, caracteristicas:carac, fotos:editFotos
+    };
+    const id=$("#p_id").value;
+    let res;
+    if(id){ res = await db.from("propiedades").update(payload).eq("id",id); }
+    else  { payload.id = editFolder; res = await db.from("propiedades").insert(payload); }
+    if(res.error){ toast("Error al guardar: "+res.error.message,true); return; }
+    $("#propModal").classList.add("hidden"); toast("Propiedad guardada"); loadInventario();
+  });
+  $("#p_delete").addEventListener("click", async ()=>{
+    const id=$("#p_id").value; if(!id) return;
+    if(!confirm("¿Borrar esta propiedad? No se puede deshacer.")) return;
+    const { error } = await db.from("propiedades").delete().eq("id",id);
+    if(error){ toast("Error al borrar: "+error.message,true); return; }
+    $("#propModal").classList.add("hidden"); toast("Propiedad borrada"); loadInventario();
+  });
+
+  // ---------- LEADS ----------
+  let leads=[];
+  $("#leadFiltro").addEventListener("change", renderLeads);
+  async function loadLeads(){
+    const { data, error } = await db.from("leads").select("*").order("created_at",{ascending:false});
+    if(error){ toast("Error cargando leads: "+error.message,true); return; }
+    leads=data||[]; renderLeads();
+  }
+  function waLink(l){
+    let num=(l.whatsapp||"").replace(/\D/g,"");
+    if(num && num.length===10) num="52"+num;
+    return num? `<a href="https://wa.me/${num}" target="_blank">${esc(l.whatsapp)}</a>` : '<span class="muted">—</span>';
+  }
+  function renderLeads(){
+    const f=$("#leadFiltro").value;
+    const list=leads.filter(l=>!f||l.estado===f);
+    $("#leadCount").textContent=list.length+" lead"+(list.length===1?"":"s");
+    const tb=$("#leadTable tbody");
+    if(!list.length){ tb.innerHTML='<tr><td colspan="7" class="empty">Sin leads todavía.</td></tr>'; return; }
+    const terr = t => t===true?'<span class="pill ok">Sí</span>':(t===false?'<span class="pill">No</span>':'<span class="muted">—</span>');
+    tb.innerHTML=list.map(l=>`<tr>
+      <td>${fecha(l.created_at)}<br><span class="pill ${l.plataforma==='instagram'?'info':''}">${esc(l.plataforma||'')}</span></td>
+      <td>${esc(l.interes||l.notas||"")}</td>
+      <td>${money(l.presupuesto_mxn)}${l.presupuesto_texto?`<br><span class="muted">“${esc(l.presupuesto_texto)}”</span>`:''}</td>
+      <td>${terr(l.tiene_terreno)}${l.zona_terreno?`<br><span class="muted">${esc(l.zona_terreno)}</span>`:''}</td>
+      <td>${waLink(l)}</td>
+      <td>${esc(l.plataforma||"")}</td>
+      <td><select data-lead="${l.id}">
+        ${["nuevo","calificado","contactado","cerrado"].map(s=>`<option value="${s}" ${l.estado===s?"selected":""}>${s}</option>`).join("")}
+      </select></td></tr>`).join("");
+    tb.querySelectorAll("[data-lead]").forEach(sel=>sel.addEventListener("change", async ()=>{
+      const { error } = await db.from("leads").update({estado:sel.value}).eq("id",sel.dataset.lead);
+      if(error){ toast("Error: "+error.message,true); } else { toast("Lead actualizado"); const l=leads.find(x=>x.id===sel.dataset.lead); if(l) l.estado=sel.value; }
+    }));
+  }
+
+  // ---------- POSTS ----------
+  let posts=[];
+  $("#postFiltro").addEventListener("change", renderPosts);
+  async function loadPosts(){
+    const { data, error } = await db.from("publicaciones").select("*").order("created_at",{ascending:false});
+    if(error){ toast("Error cargando posts: "+error.message,true); return; }
+    posts=data||[]; renderPosts();
+  }
+  function estadoPill(e){
+    const m={borrador:"warn",aprobado:"ok",programado:"info",publicado:"ok",error:"bad"};
+    return `<span class="pill ${m[e]||''}">${esc(e||"")}</span>`;
+  }
+  function renderPosts(){
+    const f=$("#postFiltro").value;
+    const list=posts.filter(p=>!f||p.estado===f);
+    $("#postCount").textContent=list.length+" post"+(list.length===1?"":"s");
+    const g=$("#postList");
+    if(!list.length){ g.innerHTML='<div class="empty">Sin posts todavía. Los genera el Flujo A.</div>'; return; }
+    g.innerHTML=list.map(p=>{
+      const media=p.media_url||"";
+      const tags=Array.isArray(p.hashtags)?p.hashtags.map(h=>esc(h)).join(" "):"";
+      return `<div class="prop">
+        <div class="thumb" style="${media?`background-image:url('${esc(media)}')`:''}">${media?'':(p.tipo||'post')}</div>
+        <div class="body">
+          <div>${estadoPill(p.estado)} <span class="pill">${esc(p.tipo||'')}</span> <span class="pill">${esc(p.plataforma||'')}</span></div>
+          <div style="white-space:pre-wrap;font-size:13.5px">${esc((p.copy_texto||"").slice(0,280))}${(p.copy_texto||"").length>280?"…":""}</div>
+          ${tags?`<div class="muted" style="font-size:12px">${tags}</div>`:''}
+          <div class="acts">
+            ${p.estado!=="aprobado"?`<button class="small" data-ap="${p.id}">Aprobar</button>`:''}
+            ${p.estado!=="borrador"?`<button class="ghost small" data-bo="${p.id}">A borrador</button>`:''}
+            <button class="ghost small" data-edit-post="${p.id}">Editar</button>
+            <button class="danger small" data-del-post="${p.id}">Borrar</button>
+          </div>
+        </div></div>`;
+    }).join("");
+    const setEstado = async (id,estado)=>{
+      const { error } = await db.from("publicaciones").update({estado}).eq("id",id);
+      if(error){ toast("Error: "+error.message,true); } else { toast("Post → "+estado); const p=posts.find(x=>x.id===id); if(p)p.estado=estado; renderPosts(); }
+    };
+    g.querySelectorAll("[data-ap]").forEach(b=>b.addEventListener("click",()=>setEstado(b.dataset.ap,"aprobado")));
+    g.querySelectorAll("[data-bo]").forEach(b=>b.addEventListener("click",()=>setEstado(b.dataset.bo,"borrador")));
+    g.querySelectorAll("[data-edit-post]").forEach(b=>b.addEventListener("click",()=>openPost(b.dataset.editPost)));
+    g.querySelectorAll("[data-del-post]").forEach(b=>b.addEventListener("click",()=>delPost(b.dataset.delPost)));
+  }
+
+  // ---------- EDITAR / BORRAR POST ----------
+  function openPost(id){
+    const p = posts.find(x=>x.id===id); if(!p) return;
+    $("#pt_id").value = p.id;
+    $("#pt_estado").value = p.estado||"borrador";
+    $("#pt_plataforma").value = p.plataforma||"ambos";
+    $("#pt_copy").value = p.copy_texto||"";
+    $("#pt_hashtags").value = Array.isArray(p.hashtags)? p.hashtags.join(" ") : (p.hashtags||"");
+    $("#pt_media").value = p.media_url||"";
+    $("#postModal").classList.remove("hidden");
+  }
+  $("#pt_cancel").addEventListener("click", ()=>$("#postModal").classList.add("hidden"));
+  $("#pt_save").addEventListener("click", async ()=>{
+    const id=$("#pt_id").value; if(!id) return;
+    const tags = $("#pt_hashtags").value.split(/[\s,]+/).map(s=>s.trim()).filter(Boolean);
+    const payload = {
+      estado: $("#pt_estado").value,
+      plataforma: $("#pt_plataforma").value,
+      copy_texto: $("#pt_copy").value,
+      hashtags: tags,
+      media_url: $("#pt_media").value.trim()||null
+    };
+    const { error } = await db.from("publicaciones").update(payload).eq("id",id);
+    if(error){ toast("Error al guardar: "+error.message,true); return; }
+    $("#postModal").classList.add("hidden"); toast("Post actualizado"); loadPosts();
+  });
+  async function delPost(id){
+    if(!confirm("¿Borrar este post? No se puede deshacer.")) return;
+    const { error } = await db.from("publicaciones").delete().eq("id",id);
+    if(error){ toast("Error al borrar: "+error.message,true); return; }
+    toast("Post borrado"); loadPosts();
+  }
+  $("#pt_delete").addEventListener("click", ()=>{ const id=$("#pt_id").value; $("#postModal").classList.add("hidden"); delPost(id); });
+
+  boot();
+})();
+</script>
+</body>
+</html>
