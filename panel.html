@@ -61,7 +61,7 @@
   .prop .body{padding:12px;display:flex;flex-direction:column;gap:6px;flex:1}
   .prop .title{font-weight:700}
   .prop .price{font-weight:700;color:#8fbcff}
-  .prop .acts{display:flex;gap:8px;margin-top:auto;padding-top:8px}
+  .prop .acts{display:flex;gap:8px;margin-top:auto;padding-top:8px;flex-wrap:wrap}
 
   table{width:100%;border-collapse:collapse;font-size:14px}
   th,td{text-align:left;padding:10px 10px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -208,7 +208,7 @@
     </div>
     <div class="field"><label>Características (separadas por coma)</label><input id="p_carac" placeholder="cocina integral, patio, 2 pisos"/></div>
     <div class="field">
-      <label>Fotos</label>
+      <label>Fotos <span class="muted">(la ⭐ marca la principal, que es la que usa el post)</span></label>
       <input id="p_fotos" type="file" accept="image/*" multiple/>
       <div id="p_thumbs" class="thumbs"></div>
     </div>
@@ -221,6 +221,36 @@
   </div>
 </div>
 
+<!-- Modal post -->
+<div id="postModal" class="overlay hidden">
+  <div class="modal">
+    <h3 id="postModalTitle">Editar post</h3>
+    <input type="hidden" id="pt_id"/>
+    <div class="row">
+      <div class="field"><label>Estado</label><select id="pt_estado">
+        <option value="borrador">Borrador</option>
+        <option value="aprobado">Aprobado</option>
+        <option value="programado">Programado</option>
+        <option value="publicado">Publicado</option>
+      </select></div>
+      <div class="field"><label>Plataforma</label><select id="pt_plataforma">
+        <option value="ambos">Ambos (FB + IG)</option>
+        <option value="fb">Facebook</option>
+        <option value="ig">Instagram</option>
+      </select></div>
+    </div>
+    <div class="field"><label>Texto del post</label><textarea id="pt_copy" rows="9" placeholder="Texto que se publicará"></textarea></div>
+    <div class="field"><label>Hashtags (separados por espacio o coma)</label><input id="pt_hashtags" placeholder="#RíoBravo #CasaNueva #BienesRaíces"/></div>
+    <div class="field"><label>Imagen del post (URL)</label><input id="pt_media" placeholder="https://..."/></div>
+    <div class="row" style="margin-top:8px">
+      <button id="pt_save">Guardar</button>
+      <button class="ghost" id="pt_cancel">Cancelar</button>
+      <span class="sp"></span>
+      <button class="danger" id="pt_delete">Borrar</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -228,7 +258,6 @@
 (function(){
   "use strict";
   const $ = s => document.querySelector(s);
-  // Acepta la llave anon clásica (eyJ...) o la nueva publishable (sb_publishable_...)
   const cfgOK = SUPABASE_URL.startsWith("http") && !SUPABASE_ANON_KEY.startsWith("PON_AQUI");
   if(!cfgOK){ $("#cfgwarn").classList.remove("hidden"); }
   const db = cfgOK ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
@@ -260,13 +289,11 @@
     if(!db) return;
     const { data:{ session } } = await db.auth.getSession();
     if(!session){ $("#login").classList.remove("hidden"); $("#app").classList.add("hidden"); return; }
-    // perfil / rol
     const { data:perfil } = await db.from("perfiles").select("*").eq("id", session.user.id).single();
     me = perfil || { id:session.user.id, nombre:session.user.email, rol:"asistente" };
     $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
     $("#whoName").textContent = me.nombre || session.user.email;
     $("#whoRole").textContent = me.rol==="admin" ? "Dueño (admin)" : "Asistente";
-    // gating: borrar propiedades solo admin
     document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("hidden", me.rol!=="admin"));
     await Promise.all([loadInventario(), loadLeads(), loadPosts()]);
   }
@@ -337,8 +364,12 @@
     $("#propModal").classList.remove("hidden");
   }
   function renderThumbs(){
-    $("#p_thumbs").innerHTML = editFotos.map((u,i)=>`<div class="t" style="background-image:url('${esc(u)}')"><button data-rm="${i}">×</button></div>`).join("");
+    $("#p_thumbs").innerHTML = editFotos.map((u,i)=>`<div class="t" style="background-image:url('${esc(u)}')" title="${i===0?'Principal':'Hacer principal'}">
+        ${i===0?'<div style="position:absolute;bottom:-6px;left:-6px;background:var(--warn);color:#1a1200;font-size:10px;font-weight:700;padding:2px 6px;border-radius:20px">⭐ principal</div>':`<button data-star="${i}" style="left:-8px;right:auto;background:var(--warn);color:#1a1200">★</button>`}
+        <button data-rm="${i}">×</button>
+      </div>`).join("");
     $("#p_thumbs").querySelectorAll("[data-rm]").forEach(b=>b.addEventListener("click",()=>{ editFotos.splice(+b.dataset.rm,1); renderThumbs(); }));
+    $("#p_thumbs").querySelectorAll("[data-star]").forEach(b=>b.addEventListener("click",()=>{ const i=+b.dataset.star; const [f]=editFotos.splice(i,1); editFotos.unshift(f); renderThumbs(); }));
   }
   $("#p_cancel").addEventListener("click", ()=>$("#propModal").classList.add("hidden"));
   $("#p_fotos").addEventListener("change", async e=>{
@@ -448,6 +479,8 @@
           <div class="acts">
             ${p.estado!=="aprobado"?`<button class="small" data-ap="${p.id}">Aprobar</button>`:''}
             ${p.estado!=="borrador"?`<button class="ghost small" data-bo="${p.id}">A borrador</button>`:''}
+            <button class="ghost small" data-edit-post="${p.id}">Editar</button>
+            <button class="danger small" data-del-post="${p.id}">Borrar</button>
           </div>
         </div></div>`;
     }).join("");
@@ -457,7 +490,43 @@
     };
     g.querySelectorAll("[data-ap]").forEach(b=>b.addEventListener("click",()=>setEstado(b.dataset.ap,"aprobado")));
     g.querySelectorAll("[data-bo]").forEach(b=>b.addEventListener("click",()=>setEstado(b.dataset.bo,"borrador")));
+    g.querySelectorAll("[data-edit-post]").forEach(b=>b.addEventListener("click",()=>openPost(b.dataset.editPost)));
+    g.querySelectorAll("[data-del-post]").forEach(b=>b.addEventListener("click",()=>delPost(b.dataset.delPost)));
   }
+
+  // ---------- EDITAR / BORRAR POST ----------
+  function openPost(id){
+    const p = posts.find(x=>x.id===id); if(!p) return;
+    $("#pt_id").value = p.id;
+    $("#pt_estado").value = p.estado||"borrador";
+    $("#pt_plataforma").value = p.plataforma||"ambos";
+    $("#pt_copy").value = p.copy_texto||"";
+    $("#pt_hashtags").value = Array.isArray(p.hashtags)? p.hashtags.join(" ") : (p.hashtags||"");
+    $("#pt_media").value = p.media_url||"";
+    $("#postModal").classList.remove("hidden");
+  }
+  $("#pt_cancel").addEventListener("click", ()=>$("#postModal").classList.add("hidden"));
+  $("#pt_save").addEventListener("click", async ()=>{
+    const id=$("#pt_id").value; if(!id) return;
+    const tags = $("#pt_hashtags").value.split(/[\s,]+/).map(s=>s.trim()).filter(Boolean);
+    const payload = {
+      estado: $("#pt_estado").value,
+      plataforma: $("#pt_plataforma").value,
+      copy_texto: $("#pt_copy").value,
+      hashtags: tags,
+      media_url: $("#pt_media").value.trim()||null
+    };
+    const { error } = await db.from("publicaciones").update(payload).eq("id",id);
+    if(error){ toast("Error al guardar: "+error.message,true); return; }
+    $("#postModal").classList.add("hidden"); toast("Post actualizado"); loadPosts();
+  });
+  async function delPost(id){
+    if(!confirm("¿Borrar este post? No se puede deshacer.")) return;
+    const { error } = await db.from("publicaciones").delete().eq("id",id);
+    if(error){ toast("Error al borrar: "+error.message,true); return; }
+    toast("Post borrado"); loadPosts();
+  }
+  $("#pt_delete").addEventListener("click", ()=>{ const id=$("#pt_id").value; $("#postModal").classList.add("hidden"); delPost(id); });
 
   boot();
 })();
