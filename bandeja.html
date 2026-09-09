@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Messages Inbox — Asesoría Inmobiliaria</title>
+<meta name="robots" content="noindex">
+<!--
+  ============================================================
+  BANDEJA DE MENSAJES  ·  Automatizacion Asesoria
+  ------------------------------------------------------------
+  La interfaz va EN INGLÉS a propósito: Meta App Review exige
+  "using English as the app UI language" en el screencast.
+  Requiere haber corrido paso4_bandeja_supabase.sql.
+  ============================================================
+-->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --bg:#f4f6f9; --panel:#ffffff; --line:#e3e8ef; --ink:#111827; --muted:#6b7280;
+    --brand:#123a5e; --brand-soft:#e8f0f7; --in:#eef1f5; --out:#123a5e;
+    --ok:#0f7b4f; --warn:#b45309; --danger:#b42318;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       color:var(--ink);background:var(--bg)}
+  button{font:inherit;cursor:pointer}
+
+  /* ---------- Login ---------- */
+  #login{max-width:380px;margin:12vh auto;background:var(--panel);border:1px solid var(--line);
+         border-radius:14px;padding:28px}
+  #login h1{font-size:19px;margin:0 0 4px}
+  #login p{margin:0 0 20px;color:var(--muted)}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-weight:600;font-size:12px;text-transform:uppercase;
+               letter-spacing:.04em;color:var(--muted);margin-bottom:6px}
+  .field input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;font:inherit}
+  .btn{background:var(--brand);color:#fff;border:0;border-radius:9px;padding:11px 18px;font-weight:600}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.ghost{background:transparent;color:var(--brand);border:1px solid var(--line)}
+  .err{color:var(--danger);font-size:13px;margin-top:10px;min-height:18px}
+
+  /* ---------- Layout ---------- */
+  #app{display:none;height:100vh;flex-direction:column}
+  header.top{display:flex;align-items:center;gap:12px;padding:12px 18px;background:var(--brand);color:#fff}
+  header.top h1{font-size:15px;margin:0;font-weight:600;letter-spacing:.01em}
+  header.top .app-id{font-size:12px;opacity:.75}
+  header.top .spacer{flex:1}
+  header.top button{background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:8px;padding:7px 12px}
+
+  .main{flex:1;display:grid;grid-template-columns:320px 1fr;min-height:0}
+  .list{border-right:1px solid var(--line);background:var(--panel);overflow-y:auto}
+  .list h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+           margin:0;padding:14px 16px 8px}
+  .conv{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);
+        padding:12px 16px}
+  .conv:hover{background:#f8fafc}
+  .conv.active{background:var(--brand-soft)}
+  .conv .row1{display:flex;align-items:center;gap:8px}
+  .conv .handle{font-weight:700}
+  .conv .prev{color:var(--muted);font-size:13px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pill{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+        padding:2px 7px;border-radius:999px}
+  .pill.fb{background:#e7efff;color:#1b4fd8}
+  .pill.ig{background:#fdeaf3;color:#b8256f}
+  .dot{margin-left:auto;background:var(--danger);color:#fff;border-radius:999px;font-size:11px;
+       min-width:19px;height:19px;display:grid;place-items:center;padding:0 5px}
+
+  .thread{display:flex;flex-direction:column;min-width:0}
+  .thread-head{background:var(--panel);border-bottom:1px solid var(--line);padding:14px 20px}
+  .thread-head .who{display:flex;align-items:center;gap:10px}
+  .thread-head .name{font-size:18px;font-weight:700}
+  .thread-head .meta{color:var(--muted);font-size:12px;margin-top:4px}
+  .thread-head .meta b{color:var(--ink)}
+  .win{font-weight:600}
+  .win.open{color:var(--ok)} .win.closed{color:var(--warn)}
+
+  .msgs{flex:1;overflow-y:auto;padding:22px 20px;display:flex;flex-direction:column;gap:14px}
+  .msg{max-width:min(560px,72%)}
+  .msg .bubble{padding:10px 14px;border-radius:14px;white-space:pre-wrap;word-wrap:break-word}
+  .msg .tag{font-size:11px;color:var(--muted);margin-top:5px}
+  .msg.in{align-self:flex-start}
+  .msg.in .bubble{background:var(--in);border-bottom-left-radius:4px}
+  .msg.out{align-self:flex-end;text-align:right}
+  .msg.out .bubble{background:var(--out);color:#fff;border-bottom-right-radius:4px;text-align:left}
+  .msg.out.error .bubble{background:var(--danger)}
+
+  .composer{border-top:1px solid var(--line);background:var(--panel);padding:14px 20px}
+  .composer .box{display:flex;gap:10px;align-items:flex-end}
+  .composer textarea{flex:1;resize:none;min-height:44px;max-height:140px;padding:11px 12px;
+                     border:1px solid var(--line);border-radius:10px;font:inherit}
+  .composer .hint{color:var(--muted);font-size:12px;margin-top:8px;min-height:18px}
+  .empty{flex:1;display:grid;place-items:center;color:var(--muted);text-align:center;padding:40px}
+  @media (max-width:800px){ .main{grid-template-columns:1fr} .list{display:none} .list.show{display:block} }
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN ===================== -->
+<section id="login">
+  <h1>Messages Inbox</h1>
+  <p>Asesoría Inmobiliaria · team access</p>
+  <div class="field">
+    <label for="email">Email</label>
+    <input id="email" type="email" autocomplete="username" placeholder="duenio@panel.com">
+  </div>
+  <div class="field">
+    <label for="pin">6-digit PIN</label>
+    <input id="pin" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password" placeholder="······">
+  </div>
+  <button class="btn" id="btnLogin" style="width:100%">Sign in</button>
+  <div class="err" id="loginErr"></div>
+</section>
+
+<!-- ===================== APP ===================== -->
+<div id="app">
+  <header class="top">
+    <h1>Automatizacion Asesoria — Messages Inbox</h1>
+    <span class="app-id">App ID 1770907191021032 · Page “Asesoría Inmobiliaria” (571719246022638) · IG @constructoraselect24</span>
+    <span class="spacer"></span>
+    <button id="btnRefresh">Refresh</button>
+    <button id="btnLogout">Sign out</button>
+  </header>
+
+  <div class="main">
+    <aside class="list" id="list">
+      <h2>Conversations</h2>
+      <div id="convs"></div>
+    </aside>
+
+    <section class="thread">
+      <div class="thread-head" id="threadHead" style="display:none">
+        <div class="who">
+          <span class="pill" id="thPill">FB</span>
+          <span class="name" id="thName">—</span>
+        </div>
+        <div class="meta">
+          Conversation with <b id="thHandle">—</b> ·
+          <span id="thPlatform">Facebook Messenger</span> ·
+          user ID <b id="thPsid">—</b> ·
+          24-hour window: <span class="win" id="thWindow">—</span>
+        </div>
+      </div>
+
+      <div class="msgs" id="msgs">
+        <div class="empty" id="emptyState">Select a conversation on the left to see the full thread.</div>
+      </div>
+
+      <div class="composer" id="composer" style="display:none">
+        <div class="box">
+          <textarea id="draft" placeholder="Write a reply and press Send — the message is sent from this app to the user through the Meta Send API"></textarea>
+          <button class="btn" id="btnSend">Send</button>
+        </div>
+        <div class="hint" id="sendHint">Replies are sent by our server through the Meta Send API within the 24-hour window.</div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1) CONFIGURACIÓN  ·  ⚠️ CAMBIA ESTOS TRES VALORES
+   - SUPABASE_URL y SUPABASE_ANON_KEY: cópialos TAL CUAL de panel.html
+   - N8N_SEND_URL: el webhook nuevo del Flujo "Enviar desde el panel"
+   ============================================================ */
+const SUPABASE_URL      = "https://yqymyyhinstfffozvhho.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxeW15eWhpbnN0ZmZmb3p2aGhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4Mjg3MjYsImV4cCI6MjEwMDQwNDcyNn0.otKzvJf3NR6rse6WAteQyax7bYVtCEobn88kZHlHLAU";
+const N8N_SEND_URL      = "https://dosmartbusiness.app.n8n.cloud/webhook/panel-responder";
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ============================================================
+   2) LOGIN
+   ============================================================ */
+const $ = (id) => document.getElementById(id);
+let convId = null, convs = [], pollTimer = null;
+
+$("btnLogin").onclick = async () => {
+  $("loginErr").textContent = "";
+  $("btnLogin").disabled = true;
+  const { error } = await sb.auth.signInWithPassword({
+    email: $("email").value.trim(),
+    password: $("pin").value.trim()
+  });
+  $("btnLogin").disabled = false;
+  if (error) { $("loginErr").textContent = "Sign-in failed: " + error.message; return; }
+  start();
+};
+$("pin").addEventListener("keydown", e => { if (e.key === "Enter") $("btnLogin").click(); });
+
+$("btnLogout").onclick = async () => { await sb.auth.signOut(); location.reload(); };
+$("btnRefresh").onclick = () => { loadConvs(); if (convId) loadMsgs(convId); };
+
+sb.auth.getSession().then(({ data }) => { if (data.session) start(); });
+
+function start(){
+  $("login").style.display = "none";
+  $("app").style.display   = "flex";
+  loadConvs();
+  subscribeRealtime();
+  clearInterval(pollTimer);
+  pollTimer = setInterval(() => { loadConvs(); if (convId) loadMsgs(convId, true); }, 6000);
+}
+
+/* ============================================================
+   3) LISTA DE CONVERSACIONES
+   ============================================================ */
+async function loadConvs(){
+  const { data, error } = await sb.from("conversaciones")
+    .select("*").order("ultimo_mensaje_at", { ascending: false }).limit(60);
+  if (error) { console.error(error); return; }
+  convs = data || [];
+  const box = $("convs");
+  box.innerHTML = convs.map(c => `
+    <button class="conv ${c.id === convId ? "active" : ""}" data-id="${c.id}">
+      <div class="row1">
+        <span class="pill ${c.plataforma === "instagram" ? "ig" : "fb"}">${c.plataforma === "instagram" ? "IG" : "FB"}</span>
+        <span class="handle">${esc(displayName(c))}</span>
+        ${c.no_leidos > 0 ? `<span class="dot">${c.no_leidos}</span>` : ""}
+      </div>
+      <div class="prev">${esc(c.ultimo_mensaje || "")}</div>
+    </button>`).join("") || `<div style="padding:16px;color:var(--muted)">No conversations yet.</div>`;
+  box.querySelectorAll(".conv").forEach(b => b.onclick = () => openConv(b.dataset.id));
+}
+
+function displayName(c){
+  return c.handle || c.nombre || ((c.plataforma === "instagram" ? "IG user " : "FB user ") + String(c.psid).slice(-6));
+}
+
+/* ============================================================
+   4) HILO
+   ============================================================ */
+async function openConv(id){
+  convId = id;
+  await loadMsgs(id);
+  await sb.rpc("marcar_leido", { p_conversacion: id });
+  loadConvs();
+}
+
+async function loadMsgs(id, silent){
+  const c = convs.find(x => x.id === id);
+  const { data, error } = await sb.from("mensajes")
+    .select("*").eq("conversacion_id", id).order("created_at", { ascending: true }).limit(200);
+  if (error) { console.error(error); return; }
+
+  if (c){
+    const ig = c.plataforma === "instagram";
+    $("threadHead").style.display = "block";
+    $("composer").style.display   = "block";
+    $("thPill").className = "pill " + (ig ? "ig" : "fb");
+    $("thPill").textContent = ig ? "IG" : "FB";
+    $("thName").textContent = displayName(c);
+    $("thHandle").textContent = displayName(c);
+    $("thPlatform").textContent = ig ? "Instagram Direct" : "Facebook Messenger";
+    $("thPsid").textContent = c.psid;
+    const open = c.ventana_expira_at && new Date(c.ventana_expira_at) > new Date();
+    const w = $("thWindow");
+    w.className = "win " + (open ? "open" : "closed");
+    w.textContent = open ? ("open — expires " + new Date(c.ventana_expira_at).toLocaleString("en-US")) : "closed";
+    $("btnSend").disabled = !open;
+    $("sendHint").textContent = open
+      ? "Replies are sent by our server through the Meta Send API within the 24-hour window."
+      : "The 24-hour messaging window is closed. We do not send messages outside the window.";
+  }
+
+  const box = $("msgs");
+  const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+  box.innerHTML = (data || []).map(m => {
+    const out = m.direccion === "saliente";
+    const tag = !out ? "Received from user"
+      : m.estado === "error" ? ("Failed to send: " + esc(m.error_texto || ""))
+      : m.origen === "bot"   ? "Sent by the app — automated reply (Meta Send API)"
+                             : "Sent by advisor from this app (Meta Send API)";
+    return `<div class="msg ${out ? "out" : "in"} ${m.estado === "error" ? "error" : ""}">
+              <div class="bubble">${esc(m.texto || "")}</div>
+              <div class="tag">${tag} · ${new Date(m.created_at).toLocaleTimeString("en-US")}</div>
+            </div>`;
+  }).join("") || `<div class="empty">No messages in this thread yet.</div>`;
+  if (!silent || atBottom) box.scrollTop = box.scrollHeight;
+}
+
+/* ============================================================
+   5) ENVIAR DESDE LA APP  (lo que el revisor quiere ver)
+   ============================================================ */
+$("btnSend").onclick = async () => {
+  const texto = $("draft").value.trim();
+  if (!texto || !convId) return;
+  const c = convs.find(x => x.id === convId);
+  $("btnSend").disabled = true;
+  $("sendHint").textContent = "Sending through the Meta Send API…";
+  try{
+    const { data: { session } } = await sb.auth.getSession();
+    const res = await fetch(N8N_SEND_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json",
+                 "Authorization": "Bearer " + session.access_token },
+      body: JSON.stringify({ conversacion_id: convId, psid: c.psid,
+                             plataforma: c.plataforma, texto })
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    $("draft").value = "";
+    $("sendHint").textContent = "Message sent from this app to the user.";
+    setTimeout(() => loadMsgs(convId), 700);
+  }catch(e){
+    $("sendHint").textContent = "Could not send: " + e.message;
+  }finally{
+    $("btnSend").disabled = false;
+  }
+};
+$("draft").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); $("btnSend").click(); }
+});
+
+/* ============================================================
+   6) REALTIME
+   ============================================================ */
+function subscribeRealtime(){
+  sb.channel("inbox")
+    .on("postgres_changes", { event: "*", schema: "public", table: "mensajes" }, () => {
+      loadConvs(); if (convId) loadMsgs(convId, true);
+    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "conversaciones" }, loadConvs)
+    .subscribe();
+}
+
+function esc(s){ return String(s).replace(/[&<>"']/g, m =>
+  ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[m])); }
+</script>
+</body>
+</html>
