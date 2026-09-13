@@ -261,6 +261,19 @@
   </div>
 </div>
 
+<!-- Confirmación de borrado -->
+<div id="confirmModal" class="overlay hidden">
+  <div class="modal" style="max-width:440px">
+    <h3 id="cf_titulo">¿Borrar?</h3>
+    <p id="cf_texto" style="margin:0 0 6px"></p>
+    <p id="cf_extra" class="muted" style="margin:0 0 20px;font-size:13.5px"></p>
+    <div class="row">
+      <button class="ghost" id="cf_no" style="flex:1">Cancelar</button>
+      <button class="danger" id="cf_si" style="flex:1">Sí, borrar</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -281,6 +294,30 @@
     const t=$("#toast"); t.textContent=msg; t.className="toast show"+(bad?" bad":"");
     setTimeout(()=>t.className="toast",2600);
   }
+  // ---------- CONFIRMACIÓN DE BORRADO ----------
+  // Reemplaza al confirm() del navegador: dice QUÉ se borra y qué se lleva
+  // en cascada. El botón peligroso nunca tiene el foco, así que un Enter
+  // distraído cancela en vez de borrar.
+  let cfResolver = null;
+  function confirmar(titulo, texto, extra){
+    $("#cf_titulo").textContent = titulo;
+    $("#cf_texto").textContent  = texto;
+    $("#cf_extra").textContent  = extra || "";
+    $("#cf_extra").style.display = extra ? "block" : "none";
+    $("#confirmModal").classList.remove("hidden");
+    setTimeout(()=>$("#cf_no").focus(), 30);
+    return new Promise(res => { cfResolver = res; });
+  }
+  function cerrarConfirm(valor){
+    $("#confirmModal").classList.add("hidden");
+    if(cfResolver){ cfResolver(valor); cfResolver = null; }
+  }
+  $("#cf_no").addEventListener("click", ()=>cerrarConfirm(false));
+  $("#cf_si").addEventListener("click", ()=>cerrarConfirm(true));
+  document.addEventListener("keydown", e=>{
+    if(e.key==="Escape" && !$("#confirmModal").classList.contains("hidden")) cerrarConfirm(false);
+  });
+
   const money = n => (n==null||n==="")?"—":("$"+Number(n).toLocaleString("es-MX")+" MXN");
   const esc = s => (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const fecha = s => s? new Date(s).toLocaleDateString("es-MX",{day:"2-digit",month:"short",year:"2-digit"}) : "—";
@@ -430,7 +467,17 @@
   });
   $("#p_delete").addEventListener("click", async ()=>{
     const id=$("#p_id").value; if(!id) return;
-    if(!confirm("¿Borrar esta propiedad? No se puede deshacer.")) return;
+    const p = props.find(x=>x.id===id);
+    const nombre = (p && p.titulo) ? p.titulo : "esta propiedad";
+    const nPosts = posts.filter(x=>x.propiedad_id===id).length;
+    const ok = await confirmar(
+      "¿Borrar esta propiedad?",
+      "Se va a borrar “" + nombre + "”. Esta acción no se puede deshacer.",
+      nPosts
+        ? "También se borrarán sus " + nPosts + " post" + (nPosts===1?"":"s") + " (borradores y publicados). Los leads asociados se conservan."
+        : "Los leads asociados se conservan."
+    );
+    if(!ok) return;
     const { error } = await db.from("propiedades").delete().eq("id",id);
     if(error){ toast("Error al borrar: "+error.message,true); return; }
     $("#propModal").classList.add("hidden"); toast("Propiedad borrada"); loadInventario();
@@ -544,7 +591,12 @@
     $("#postModal").classList.add("hidden"); toast("Post actualizado"); loadPosts();
   });
   async function delPost(id){
-    if(!confirm("¿Borrar este post? No se puede deshacer.")) return;
+    const p = posts.find(x=>x.id===id);
+    const ini = p && p.copy_texto ? "“" + p.copy_texto.slice(0,60).replace(/\s+/g," ") + "…”" : "este post";
+    const ok = await confirmar("¿Borrar este post?",
+      "Se va a borrar " + ini + ". Esta acción no se puede deshacer.",
+      "La propiedad no se toca; puedes volver a generar el post desde el Flujo A.");
+    if(!ok) return;
     const { error } = await db.from("publicaciones").delete().eq("id",id);
     if(error){ toast("Error al borrar: "+error.message,true); return; }
     toast("Post borrado"); loadPosts();
