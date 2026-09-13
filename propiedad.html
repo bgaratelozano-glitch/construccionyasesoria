@@ -35,7 +35,10 @@
   header.top span{font-size:12.5px;opacity:.8}
 
   .galeria{background:#0d1722;border-radius:0 0 14px 14px;overflow:hidden}
-  .principal{width:100%;aspect-ratio:4/3;max-height:460px;object-fit:cover;display:block;background:#0d1722}
+  /* contain = se ve la foto COMPLETA. Con "cover" llenaba el recuadro pero
+     le recortaba arriba y abajo a las fotos anchas. El recuadro mantiene
+     su altura para que no brinque la página al cambiar de foto. */
+  .principal{width:100%;aspect-ratio:16/10;max-height:72vh;object-fit:contain;display:block;background:#0d1722}
   .tiras{display:flex;gap:8px;padding:8px;overflow-x:auto}
   .tiras img{width:78px;height:58px;object-fit:cover;border-radius:7px;cursor:pointer;
     opacity:.6;border:2px solid transparent;flex:0 0 auto}
@@ -125,7 +128,7 @@
    ⚠️ CAMBIA ESTOS DOS VALORES (los mismos de panel.html)
    ============================================================ */
 const SUPABASE_URL      = "https://yqymyyhinstfffozvhho.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxeW15eWhpbnN0ZmZmb3p2aGhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4Mjg3MjYsImV4cCI6MjEwMDQwNDcyNn0.otKzvJf3NR6rse6WAteQyax7bYVtCEobn88kZHlHLAU";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxeW15eWhpbnN0ZmZmb3p2aGhvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDgyODcyNiwiZXhwIjoyMTAwNDA0NzI2fQ.Jupkl-rOqwlrFlC65kudeiKbZYhmFJYey_vDkD7CbOY";
 const WA_DEFAULT        = "528991611308";
 
 const $ = (id) => document.getElementById(id);
