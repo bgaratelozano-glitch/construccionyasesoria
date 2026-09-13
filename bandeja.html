@@ -47,6 +47,9 @@
   header.top .app-id{font-size:12px;opacity:.75}
   header.top .spacer{flex:1}
   header.top button{background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:8px;padding:7px 12px}
+  header.top a#btnPanel{background:rgba(255,255,255,.14);color:#fff;border-radius:8px;
+    padding:7px 12px;text-decoration:none;font-size:14px;white-space:nowrap}
+  header.top a#btnPanel:hover{background:rgba(255,255,255,.24)}
 
   .main{flex:1;display:grid;grid-template-columns:320px 1fr;min-height:0}
   .list{border-right:1px solid var(--line);background:var(--panel);overflow-y:auto}
@@ -130,6 +133,7 @@
     <h1>Automatizacion Asesoria — Messages Inbox</h1>
     <span class="app-id">App ID 1770907191021032 · Page “Asesoría Inmobiliaria” (571719246022638) · IG @constructoraselect24</span>
     <span class="spacer"></span>
+    <a href="panel.html" id="btnPanel">← Panel</a>
     <button id="btnRefresh">Refresh</button>
     <button id="btnLogout">Sign out</button>
   </header>
@@ -178,8 +182,8 @@
    - SUPABASE_URL y SUPABASE_ANON_KEY: cópialos TAL CUAL de panel.html
    - N8N_SEND_URL: el webhook nuevo del Flujo "Enviar desde el panel"
    ============================================================ */
-const SUPABASE_URL      = "https://yqymyyhinstfffozvhho.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxeW15eWhpbnN0ZmZmb3p2aGhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4Mjg3MjYsImV4cCI6MjEwMDQwNDcyNn0.otKzvJf3NR6rse6WAteQyax7bYVtCEobn88kZHlHLAU";
+const SUPABASE_URL      = "https://TU-PROYECTO.supabase.co";
+const SUPABASE_ANON_KEY = "PEGA_AQUI_TU_ANON_KEY";
 const N8N_SEND_URL      = "https://dosmartbusiness.app.n8n.cloud/webhook/panel-responder";
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -300,9 +304,22 @@ async function loadMsgs(id, silent){
 /* ============================================================
    5) ENVIAR DESDE LA APP  (lo que el revisor quiere ver)
    ============================================================ */
+let ultimoEnvio = { texto: "", conv: "", t: 0 };
+
 $("btnSend").onclick = async () => {
   const texto = $("draft").value.trim();
   if (!texto || !convId) return;
+
+  // Candado anti-duplicado: ignora el mismo texto en la misma conversación
+  // dentro de 10 s (doble clic, Enter + clic, o un envío que tardó en responder).
+  const ahora = Date.now();
+  if (ultimoEnvio.texto === texto && ultimoEnvio.conv === convId && ahora - ultimoEnvio.t < 10000) {
+    $("sendHint").textContent = "That message was just sent — not sending it twice.";
+    $("draft").value = "";
+    return;
+  }
+  ultimoEnvio = { texto: texto, conv: convId, t: ahora };
+
   const c = convs.find(x => x.id === convId);
   $("btnSend").disabled = true;
   $("sendHint").textContent = "Sending through the Meta Send API…";

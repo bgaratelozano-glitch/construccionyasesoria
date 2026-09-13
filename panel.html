@@ -50,6 +50,12 @@
     position:sticky;top:57px;z-index:4;flex-wrap:wrap}
   nav button{background:transparent;color:var(--muted);font-weight:600;border-radius:9px}
   nav button.active{background:var(--brand);color:#fff}
+  /* Enlace a la bandeja de mensajes (página aparte) */
+  nav a.navlink{display:inline-flex;align-items:center;gap:7px;text-decoration:none;
+    color:var(--muted);font-weight:600;border-radius:9px;padding:9px 14px;margin-left:auto}
+  nav a.navlink:hover{background:var(--panel2);color:var(--text)}
+  nav a.navlink .badge{background:var(--bad);color:#fff;border-radius:999px;font-size:11px;
+    font-weight:700;min-width:19px;height:19px;display:grid;place-items:center;padding:0 6px}
   main{max-width:1100px;margin:0 auto;padding:20px 18px 60px}
   .bar{display:flex;align-items:center;gap:12px;margin:0 0 16px;flex-wrap:wrap}
   .bar h2{margin:0;font-size:19px}
@@ -130,6 +136,9 @@
     <button data-tab="inventario" class="active">🏠 Inventario</button>
     <button data-tab="leads">🎯 Leads</button>
     <button data-tab="posts">📝 Posts</button>
+    <a class="navlink" href="bandeja.html" title="Conversaciones de Facebook e Instagram">
+      💬 Mensajes <span id="navBandejaBadge" class="badge hidden">0</span>
+    </a>
   </nav>
   <main>
     <!-- INVENTARIO -->
@@ -296,7 +305,19 @@
     $("#whoName").textContent = me.nombre || session.user.email;
     $("#whoRole").textContent = me.rol==="admin" ? "Dueño (admin)" : "Asistente";
     document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("hidden", me.rol!=="admin"));
-    await Promise.all([loadInventario(), loadLeads(), loadPosts()]);
+    await Promise.all([loadInventario(), loadLeads(), loadPosts(), loadNoLeidos()]);
+    clearInterval(window.__bandejaTimer);
+    window.__bandejaTimer = setInterval(loadNoLeidos, 30000);
+  }
+
+  // ---------- BANDEJA: contador de mensajes sin leer ----------
+  async function loadNoLeidos(){
+    const { data, error } = await db.from("conversaciones").select("no_leidos");
+    const b = $("#navBandejaBadge");
+    if(error || !data){ b.classList.add("hidden"); return; }
+    const total = data.reduce((s,c)=> s + (c.no_leidos||0), 0);
+    b.textContent = total > 99 ? "99+" : total;
+    b.classList.toggle("hidden", total === 0);
   }
   if(db){ db.auth.onAuthStateChange((_e,s)=>{ if(s) boot(); }); }
 
