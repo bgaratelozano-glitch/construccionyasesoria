@@ -91,7 +91,22 @@
   .msg.out .bubble{background:var(--out);color:#fff;border-bottom-right-radius:4px;text-align:left}
   .msg.out.error .bubble{background:var(--danger)}
 
-  .composer{border-top:1px solid var(--line);background:var(--panel);padding:14px 20px}
+  .composer{border-top:1px solid var(--line);background:var(--panel);padding:14px 20px;position:relative}
+  /* Selector de propiedad (se abre con el botón o escribiendo "/") */
+  .picker{position:absolute;left:20px;right:20px;bottom:100%;margin-bottom:8px;z-index:10;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 10px 30px rgba(15,23,32,.18);overflow:hidden}
+  .picker input{width:100%;border:0;border-bottom:1px solid var(--line);padding:12px 14px;font:inherit;outline:0}
+  .picker .lista{max-height:270px;overflow-y:auto}
+  .picker .it{display:flex;gap:11px;align-items:center;width:100%;text-align:left;
+    background:none;border:0;border-bottom:1px solid var(--line);padding:10px 14px}
+  .picker .it:hover,.picker .it.sel{background:var(--brand-soft)}
+  .picker .it img,.picker .it .nofoto{width:52px;height:40px;border-radius:6px;object-fit:cover;
+    background:var(--in);flex:0 0 auto;display:grid;place-items:center;font-size:17px}
+  .picker .it .txt{min-width:0;flex:1}
+  .picker .it .t{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .picker .it .s{color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .picker .vacio{padding:18px 14px;color:var(--muted);font-size:13.5px}
   .composer .box{display:flex;gap:10px;align-items:flex-end}
   .composer textarea{flex:1;resize:none;min-height:44px;max-height:140px;padding:11px 12px;
                      border:1px solid var(--line);border-radius:10px;font:inherit}
@@ -166,8 +181,15 @@
       </div>
 
       <div class="composer" id="composer" style="display:none">
+
+        <div class="picker" id="propPicker" hidden>
+          <input id="propSearch" placeholder="Search a property by name, area or price…" autocomplete="off">
+          <div class="lista" id="propList"></div>
+        </div>
+
         <div class="box">
-          <textarea id="draft" placeholder="Write a reply and press Send — the message is sent from this app to the user through the Meta Send API"></textarea>
+          <textarea id="draft" placeholder="Write a reply and press Send — type / to insert a property"></textarea>
+          <button class="btn ghost" id="btnProp" title="Insert a property (or type /)">📎 Property</button>
           <button class="btn" id="btnSend">Send</button>
         </div>
         <div class="hint" id="sendHint">Replies are sent by our server through the Meta Send API within the 24-hour window.</div>
@@ -216,6 +238,7 @@ function start(){
   $("login").style.display = "none";
   $("app").style.display   = "flex";
   loadConvs();
+  loadPropiedades();
   subscribeRealtime();
   clearInterval(pollTimer);
   pollTimer = setInterval(() => { loadConvs(); if (convId) loadMsgs(convId, true); }, 6000);
@@ -344,6 +367,99 @@ $("btnSend").onclick = async () => {
 };
 $("draft").addEventListener("keydown", e => {
   if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); $("btnSend").click(); }
+  // Escribir "/" en la caja vacía abre el buscador de propiedades.
+  if (e.key === "/" && $("draft").value.trim() === ""){ setTimeout(abrirPicker, 0); }
+  if (e.key === "Escape") cerrarPicker();
+});
+
+/* ============================================================
+   5b) INSERTAR UNA PROPIEDAD
+   El asesor escoge del inventario y se le arma el mensaje con la liga
+   a la ficha pública. NO se envía solo: puede editarlo antes de Send.
+   ============================================================ */
+let propiedades = [];
+
+async function loadPropiedades(){
+  const { data, error } = await sb.from("propiedades")
+    .select("id,tipo,titulo,colonia,ciudad,precio,m2_terreno,recamaras,banos,fotos")
+    .eq("estatus", "disponible")
+    .order("created_at", { ascending: false });
+  if (!error) propiedades = data || [];
+}
+
+function fichaURL(p){ return location.origin + "/propiedad.html?id=" + p.id; }
+
+function plantillaPropiedad(p){
+  const L = [];
+  L.push((p.tipo === "terreno" ? "🏞️ " : "🏡 ") + (p.titulo || "Propiedad disponible"));
+  const ubic = [p.colonia, p.ciudad].filter(Boolean).join(", ");
+  if (ubic) L.push("📍 " + ubic);
+  const ficha = [];
+  if (p.precio)     ficha.push("💰 $" + Number(p.precio).toLocaleString("es-MX") + " MXN");
+  if (p.m2_terreno) ficha.push("📐 " + p.m2_terreno + " m²");
+  if (p.recamaras)  ficha.push("🛏️ " + p.recamaras + " rec");
+  if (p.banos)      ficha.push("🚿 " + p.banos);
+  if (ficha.length) L.push(ficha.join(" · "));
+  L.push("Ve todas las fotos y detalles aquí 👉");
+  L.push(fichaURL(p));
+  return L.join("\n");
+}
+
+function abrirPicker(){
+  if (!convId) return;
+  $("propPicker").hidden = false;
+  $("propSearch").value = "";
+  pintarPicker("");
+  $("propSearch").focus();
+}
+function cerrarPicker(){ $("propPicker").hidden = true; }
+
+function pintarPicker(q){
+  const t = (q || "").toLowerCase().trim();
+  const lista = propiedades.filter(p => !t ||
+    [p.titulo, p.colonia, p.ciudad, p.tipo, p.precio].join(" ").toLowerCase().includes(t));
+  const box = $("propList");
+  if (!lista.length){
+    box.innerHTML = `<div class="vacio">${propiedades.length
+      ? "No property matches that search."
+      : "No properties available yet. Add them in the panel."}</div>`;
+    return;
+  }
+  box.innerHTML = lista.slice(0, 40).map(p => {
+    const foto = (p.fotos && p.fotos[0]) || "";
+    const sub = [
+      [p.colonia, p.ciudad].filter(Boolean).join(", "),
+      p.precio ? "$" + Number(p.precio).toLocaleString("es-MX") : ""
+    ].filter(Boolean).join(" · ");
+    return `<button class="it" data-id="${esc(p.id)}">
+      ${foto ? `<img src="${esc(foto)}" alt="">`
+             : `<span class="nofoto">${p.tipo === "terreno" ? "🏞️" : "🏡"}</span>`}
+      <span class="txt">
+        <span class="t">${esc(p.titulo || "(sin título)")}</span>
+        <span class="s">${esc(sub)}</span>
+      </span></button>`;
+  }).join("");
+  box.querySelectorAll(".it").forEach(b => b.onclick = () => insertarPropiedad(b.dataset.id));
+}
+
+function insertarPropiedad(id){
+  const p = propiedades.find(x => x.id === id);
+  if (!p) return;
+  const d = $("draft");
+  // Si el asesor escribió "/" para abrir el buscador, lo quitamos.
+  const base = d.value.replace(/\/\s*$/, "").trimEnd();
+  d.value = (base ? base + "\n\n" : "") + plantillaPropiedad(p);
+  cerrarPicker();
+  d.focus();
+  d.selectionStart = d.selectionEnd = d.value.length;
+  $("sendHint").textContent = "Property inserted — review the message and press Send.";
+}
+
+$("btnProp").onclick = () => $("propPicker").hidden ? abrirPicker() : cerrarPicker();
+$("propSearch").addEventListener("input", e => pintarPicker(e.target.value));
+$("propSearch").addEventListener("keydown", e => { if (e.key === "Escape") { cerrarPicker(); $("draft").focus(); } });
+document.addEventListener("click", e => {
+  if (!$("propPicker").hidden && !e.target.closest("#propPicker") && !e.target.closest("#btnProp")) cerrarPicker();
 });
 
 /* ============================================================
