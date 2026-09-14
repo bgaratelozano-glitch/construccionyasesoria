@@ -2,9 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Messages Inbox — Asesoría Inmobiliaria</title>
 <meta name="robots" content="noindex">
+<meta name="theme-color" content="#123a5e">
+<meta name="mobile-web-app-capable" content="yes">
 <!--
   ============================================================
   BANDEJA DE MENSAJES  ·  Automatizacion Asesoria
@@ -23,7 +25,7 @@
   }
   *{box-sizing:border-box}
   body{margin:0;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-       color:var(--ink);background:var(--bg)}
+       color:var(--ink);background:var(--bg);-webkit-text-size-adjust:100%}
   button{font:inherit;cursor:pointer}
 
   /* ---------- Login ---------- */
@@ -41,7 +43,9 @@
   .err{color:var(--danger);font-size:13px;margin-top:10px;min-height:18px}
 
   /* ---------- Layout ---------- */
-  #app{display:none;height:100vh;flex-direction:column}
+  /* 100dvh (no 100vh) para que la barra del navegador móvil no empuje
+     el composer fuera de la pantalla. 100vh queda como respaldo. */
+  #app{display:none;height:100vh;height:100dvh;flex-direction:column}
   header.top{display:flex;align-items:center;gap:12px;padding:12px 18px;background:var(--brand);color:#fff}
   header.top h1{font-size:15px;margin:0;font-weight:600;letter-spacing:.01em}
   header.top .app-id{font-size:12px;opacity:.75}
@@ -52,7 +56,8 @@
   header.top a#btnPanel:hover{background:rgba(255,255,255,.24)}
 
   .main{flex:1;display:grid;grid-template-columns:320px 1fr;min-height:0}
-  .list{border-right:1px solid var(--line);background:var(--panel);overflow-y:auto}
+  .list{border-right:1px solid var(--line);background:var(--panel);overflow-y:auto;
+        overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
   .list h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
            margin:0;padding:14px 16px 8px}
   .conv{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);
@@ -75,13 +80,17 @@
   html,body{height:100%;overflow:hidden}
   .thread-head{background:var(--panel);border-bottom:1px solid var(--line);padding:14px 20px}
   .thread-head .who{display:flex;align-items:center;gap:10px}
+  /* Botón "volver a la lista": solo existe en móvil (ver media query final) */
+  .backbtn{display:none;background:var(--brand-soft);color:var(--brand);border:1px solid var(--line);
+    border-radius:9px;padding:7px 11px;font-weight:700;flex:0 0 auto}
   .thread-head .name{font-size:18px;font-weight:700}
-  .thread-head .meta{color:var(--muted);font-size:12px;margin-top:4px}
+  .thread-head .meta{color:var(--muted);font-size:12px;margin-top:4px;overflow-wrap:anywhere}
   .thread-head .meta b{color:var(--ink)}
   .win{font-weight:600}
   .win.open{color:var(--ok)} .win.closed{color:var(--warn)}
 
-  .msgs{flex:1;overflow-y:auto;padding:22px 20px;display:flex;flex-direction:column;gap:14px}
+  .msgs{flex:1;overflow-y:auto;padding:22px 20px;display:flex;flex-direction:column;gap:14px;
+        overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
   .msg{max-width:min(560px,72%)}
   .msg .bubble{padding:10px 14px;border-radius:14px;white-space:pre-wrap;word-wrap:break-word}
   .msg .tag{font-size:11px;color:var(--muted);margin-top:5px}
@@ -121,7 +130,60 @@
     .msg{max-width:88%}
     .thread-head{padding:12px 14px}
   }
-  @media (max-width:560px){ .main{grid-template-columns:1fr} .list{display:none} .list.show{display:block} }
+
+  /* ==================== MÓVIL (≤700px) ====================
+     Una sola columna con DOS pantallas: la lista de conversaciones y el
+     hilo. La clase `chat-abierto` en <body> decide cuál se ve y el botón
+     "←" regresa a la lista.
+     Antes la lista se escondía con display:none a partir de 560px y no
+     había ningún botón que la volviera a mostrar: en celular la bandeja
+     quedaba inservible (solo el aviso "Select a conversation on the left").
+     ========================================================= */
+  @media (max-width:700px){
+    header.top{flex-wrap:wrap;gap:8px;padding:10px 12px;
+      padding-top:calc(10px + env(safe-area-inset-top))}
+    .solo-pc{display:none}      /* detalles que no caben en celular */
+    header.top h1{font-size:15px;flex:1 1 auto;min-width:0}
+    header.top .spacer{display:none}
+    /* La identidad de la app sigue visible, en su propio renglón */
+    header.top .app-id{flex:1 1 100%;order:3;font-size:10.5px;line-height:1.35;opacity:.72}
+    /* min-height 40-46px: lo mínimo para que el dedo no falle */
+    header.top button, header.top a#btnPanel{padding:10px 12px;font-size:13px;min-height:40px;
+      display:inline-flex;align-items:center}
+    #btnRefresh{display:none}   /* en móvil sobra: se refresca solo cada 6 s */
+
+    .main{grid-template-columns:1fr;grid-template-rows:1fr}
+    .list,.thread{grid-column:1;grid-row:1;min-width:0}
+    .list{border-right:0}
+    body.chat-abierto .list{display:none}
+    body:not(.chat-abierto) .thread{display:none}
+
+    .list h2{padding:12px 14px 6px}
+    .conv{padding:14px}
+    .conv .handle{font-size:15px}
+    .conv .prev{font-size:13.5px}
+    .backbtn{display:inline-flex;align-items:center;min-height:42px;padding:8px 12px}
+
+    .thread-head{padding:10px 12px}
+    .thread-head .name{font-size:16px}
+    .thread-head .meta{font-size:11.5px;margin-top:3px}
+    .msgs{padding:14px 12px;gap:12px}
+    .msg{max-width:90%}
+
+    .composer{padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+    .composer .box{flex-wrap:wrap;gap:8px}
+    /* 16px obligatorio: con menos, Safari de iPhone hace zoom al enfocar */
+    .composer textarea{flex:1 1 100%;font-size:16px;min-height:48px;max-height:32vh}
+    #btnProp,#btnSend{flex:1 1 0;text-align:center;padding:12px 10px;min-height:46px}
+    .composer .hint{font-size:11.5px;margin-top:6px}
+
+    .picker{left:12px;right:12px}
+    .picker input{font-size:16px}
+    .picker .lista{max-height:44vh}
+
+    #login{margin:5vh 14px;padding:22px 20px}
+    .field input{font-size:16px}
+  }
 </style>
 </head>
 <body>
@@ -145,7 +207,7 @@
 <!-- ===================== APP ===================== -->
 <div id="app">
   <header class="top">
-    <h1>Automatizacion Asesoria — Messages Inbox</h1>
+    <h1><span class="solo-pc">Automatizacion Asesoria — </span>Messages Inbox</h1>
     <span class="app-id">App ID 1770907191021032 · Page “Asesoría Inmobiliaria” (571719246022638) · IG @constructoraselect24</span>
     <span class="spacer"></span>
     <a href="panel.html" id="btnPanel">← Panel</a>
@@ -162,22 +224,26 @@
     <section class="thread">
       <div class="thread-head" id="threadHead" style="display:none">
         <div class="who">
+          <button class="backbtn" id="btnBack" aria-label="Back to conversations">← Inbox</button>
           <span class="pill" id="thPill">FB</span>
           <span class="name" id="thName">—</span>
         </div>
+        <!-- Lo marcado como .solo-pc se oculta en celular: ahí solo caben
+             la plataforma y el estado de la ventana de 24 h. La identidad
+             completa (App ID, Página, IG) sigue visible en el encabezado. -->
         <div class="meta">
-          Conversation with <b id="thHandle">—</b> ·
-          <span id="thPlatform">Facebook Messenger</span> ·
-          user ID <b id="thPsid">—</b>
+          <span class="solo-pc">Conversation with <b id="thHandle">—</b> · </span>
+          <span id="thPlatform">Facebook Messenger</span>
+          <span class="solo-pc"> · user ID <b id="thPsid">—</b></span>
         </div>
         <div class="meta">
-          Our business account: <b id="thAsset">—</b> ·
+          <span class="solo-pc">Our business account: <b id="thAsset">—</b> · </span>
           24-hour window: <span class="win" id="thWindow">—</span>
         </div>
       </div>
 
       <div class="msgs" id="msgs">
-        <div class="empty" id="emptyState">Select a conversation on the left to see the full thread.</div>
+        <div class="empty" id="emptyState">Select a conversation to see the full thread.</div>
       </div>
 
       <div class="composer" id="composer" style="display:none">
@@ -232,11 +298,35 @@ $("pin").addEventListener("keydown", e => { if (e.key === "Enter") $("btnLogin")
 $("btnLogout").onclick = async () => { await sb.auth.signOut(); location.reload(); };
 $("btnRefresh").onclick = () => { loadConvs(); if (convId) loadMsgs(convId); };
 
+/* ---- Navegación en celular: lista  <->  hilo ----------------------
+   En pantallas angostas solo cabe una de las dos vistas. La clase
+   `chat-abierto` en <body> es la que manda (ver la media query de 700px).
+   En escritorio no estorba: ahí se ven las dos columnas siempre.        */
+const esMovil = () => window.matchMedia("(max-width:700px)").matches;
+
+function abrirVistaHilo(){
+  document.body.classList.add("chat-abierto");
+  // Entrada en el historial para que el "atrás" del celular regrese
+  // a la lista en lugar de salirse de la bandeja.
+  if (esMovil() && !(history.state && history.state.hilo)) history.pushState({ hilo:1 }, "");
+}
+function volverALista(desdeAtras){
+  document.body.classList.remove("chat-abierto");
+  cerrarPicker();
+  loadConvs();
+  if (!desdeAtras && history.state && history.state.hilo) history.back();
+}
+$("btnBack").onclick = () => volverALista(false);
+window.addEventListener("popstate", () => {
+  if (document.body.classList.contains("chat-abierto")) volverALista(true);
+});
+
 sb.auth.getSession().then(({ data }) => { if (data.session) start(); });
 
 function start(){
   $("login").style.display = "none";
   $("app").style.display   = "flex";
+  document.body.classList.remove("chat-abierto");   // en celular se entra por la lista
   loadConvs();
   loadPropiedades();
   subscribeRealtime();
@@ -274,6 +364,7 @@ function displayName(c){
    ============================================================ */
 async function openConv(id){
   convId = id;
+  abrirVistaHilo();          // en celular cambia de la lista al hilo
   await loadMsgs(id);
   await sb.rpc("marcar_leido", { p_conversacion: id });
   loadConvs();
@@ -301,7 +392,9 @@ async function loadMsgs(id, silent){
     const open = c.ventana_expira_at && new Date(c.ventana_expira_at) > new Date();
     const w = $("thWindow");
     w.className = "win " + (open ? "open" : "closed");
-    w.textContent = open ? ("open — expires " + new Date(c.ventana_expira_at).toLocaleString("en-US")) : "closed";
+    w.textContent = !open ? "closed"
+      : esMovil() ? "open"    // en celular la fecha completa no cabe
+      : ("open — expires " + new Date(c.ventana_expira_at).toLocaleString("en-US"));
     $("btnSend").disabled = !open;
     $("sendHint").textContent = open
       ? "Replies are sent by our server through the Meta Send API within the 24-hour window."
@@ -365,8 +458,11 @@ $("btnSend").onclick = async () => {
     $("btnSend").disabled = false;
   }
 };
+/* En pantalla táctil el Enter debe hacer salto de línea (el botón Send está
+   a la vista); en escritorio Enter sigue enviando como siempre. */
+const tecladoTactil = window.matchMedia("(hover:none) and (pointer:coarse)").matches;
 $("draft").addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); $("btnSend").click(); }
+  if (e.key === "Enter" && !e.shiftKey && !tecladoTactil){ e.preventDefault(); $("btnSend").click(); }
   // Escribir "/" en la caja vacía abre el buscador de propiedades.
   if (e.key === "/" && $("draft").value.trim() === ""){ setTimeout(abrirPicker, 0); }
   if (e.key === "Escape") cerrarPicker();
