@@ -281,6 +281,9 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
    ============================================================ */
 const $ = (id) => document.getElementById(id);
 let convId = null, convs = [], pollTimer = null;
+// Enlace directo desde la ficha del lead en el panel: bandeja.html?psid=...
+// abre ese hilo solo, sin tener que buscarlo en la lista.
+let psidPendiente = new URLSearchParams(location.search).get("psid");
 
 $("btnLogin").onclick = async () => {
   $("loginErr").textContent = "";
@@ -353,6 +356,12 @@ async function loadConvs(){
       <div class="prev">${esc(c.ultimo_mensaje || "")}</div>
     </button>`).join("") || `<div style="padding:16px;color:var(--muted)">No conversations yet.</div>`;
   box.querySelectorAll(".conv").forEach(b => b.onclick = () => openConv(b.dataset.id));
+
+  if (psidPendiente){
+    const c = convs.find(x => String(x.psid) === psidPendiente);
+    psidPendiente = null;                 // solo el primer intento
+    if (c) openConv(c.id);
+  }
 }
 
 function displayName(c){

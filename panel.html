@@ -91,6 +91,26 @@
   .toast.bad{border-color:var(--bad)}
   .empty{padding:40px;text-align:center;color:var(--muted)}
   .solo-movil{display:none;font-size:12.5px;color:var(--muted);margin:0 0 8px}
+
+  /* Semáforo de leads: qué tan cerca quedó el prospecto del monto buscado */
+  tr.lead{cursor:pointer}
+  tr.lead:hover{background:var(--panel2)}
+  .avance{display:flex;align-items:center;gap:8px;min-width:118px}
+  .avance .barra{flex:1;min-width:52px;height:7px;border-radius:99px;background:#0d1620;overflow:hidden}
+  .avance .barra i{display:block;height:100%;border-radius:99px;background:#5a6b80}
+  .avance b{font-size:12.5px;min-width:34px;text-align:right}
+  .sem-fuerte .barra i{background:var(--ok)}
+  .sem-cerca  .barra i{background:var(--warn)}
+  .falta{display:block;font-size:11.5px;color:var(--warn);margin-top:3px}
+  .falta.bajo{color:var(--muted)}
+  td .cuando{white-space:nowrap;font-size:11.5px;color:var(--muted)}
+  /* En celular la tabla se desliza, así que el dato que importa —qué tan
+     cerca está del monto— se repite junto al nombre, que siempre se ve. */
+  .mini-sem{display:none;font-size:12px;margin-top:4px;font-weight:600}
+  .mini-sem.fuerte{color:var(--ok)} .mini-sem.cerca{color:var(--warn)} .mini-sem.bajo{color:var(--muted)}
+  .ficha{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:14px;margin-bottom:16px}
+  .ficha dt{color:var(--muted);font-size:12.5px;padding-top:2px}
+  .ficha dd{margin:0}
   .cfgwarn{background:rgba(224,163,22,.12);border:1px solid var(--warn);color:#f2c65a;
     padding:12px 16px;border-radius:10px;margin:16px}
 
@@ -120,7 +140,7 @@
     .bar h2{font-size:17px}
     .grid{grid-template-columns:1fr;gap:12px}
     .prop .thumb{aspect-ratio:3/2;max-height:190px}
-    .solo-movil{display:block}
+    .solo-movil,.mini-sem{display:block}
 
     /* 16px obligatorio: con menos, Safari de iPhone hace zoom al enfocar */
     input,select,textarea{font-size:16px}
@@ -128,7 +148,8 @@
     .card{padding:20px}
 
     /* La tabla de leads no se comprime: se desliza dentro de su marco */
-    #leadTable{min-width:660px}
+    #leadTable{min-width:700px}
+    #leadTable td:first-child,#leadTable th:first-child{min-width:158px}
     th,td{padding:9px 8px}
 
     .overlay{padding:10px}
@@ -207,15 +228,22 @@
         <h2>Leads</h2>
         <span id="leadCount" class="muted"></span>
         <span class="sp"></span>
+        <select id="leadSemaforo" style="width:auto" title="Qué tan cerca están del monto que busca la empresa">
+          <option value="">Todo el embudo</option>
+          <option value="fuerte">🔥 Llegan al monto</option>
+          <option value="cerca">🟡 Cerca — negociables</option>
+          <option value="bajo">⚪ Todavía lejos</option>
+          <option value="sin_dato">❔ Sin presupuesto aún</option>
+        </select>
         <select id="leadFiltro" style="width:auto">
           <option value="">Todos</option><option value="nuevo">Nuevos</option>
           <option value="calificado">Calificados</option><option value="contactado">Contactados</option>
           <option value="cerrado">Cerrados</option>
         </select>
       </div>
-      <p class="solo-movil">👉 Desliza la tabla a los lados para ver presupuesto, WhatsApp y estado.</p>
+      <p class="solo-movil">👉 Desliza la tabla a los lados. Toca un renglón para ver la ficha completa.</p>
       <div class="tablewrap"><table id="leadTable">
-        <thead><tr><th>Fecha</th><th>Interés</th><th>Presupuesto</th><th>Terreno</th><th>WhatsApp</th><th>Origen</th><th>Estado</th></tr></thead>
+        <thead><tr><th>Prospecto</th><th>Interés</th><th>Tipo</th><th>Presupuesto</th><th>Qué tan cerca</th><th>Terreno</th><th>WhatsApp</th><th>Estado</th></tr></thead>
         <tbody></tbody>
       </table></div>
     </section>
@@ -306,6 +334,28 @@
       <button class="ghost" id="pt_cancel">Cancelar</button>
       <span class="sp"></span>
       <button class="danger" id="pt_delete">Borrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ficha del prospecto -->
+<div id="leadModal" class="overlay hidden">
+  <div class="modal" style="max-width:520px">
+    <h3 id="ld_titulo">Ficha del prospecto</h3>
+    <dl class="ficha" id="ld_ficha"></dl>
+    <div class="field"><label>Estado</label><select id="ld_estado">
+      <option value="nuevo">Nuevo</option><option value="calificado">Calificado</option>
+      <option value="contactado">Contactado</option><option value="cerrado">Cerrado</option>
+    </select></div>
+    <div class="field"><label>Notas del vendedor</label>
+      <textarea id="ld_notas" rows="4" placeholder="Qué se le ofreció, cuándo se le habló…"></textarea></div>
+    <div class="row" style="margin-top:8px">
+      <button id="ld_save">Guardar</button>
+      <a id="ld_chat" class="" href="#" target="_blank"
+         style="display:inline-flex;align-items:center;padding:9px 14px;border-radius:9px;
+                border:1px solid var(--line);color:var(--text);text-decoration:none;font-weight:500">💬 Ver conversación</a>
+      <span class="sp"></span>
+      <button class="ghost" id="ld_close">Cerrar</button>
     </div>
   </div>
 </div>
@@ -537,40 +587,125 @@
   });
 
   // ---------- LEADS ----------
+  // Cada prospecto es UNA ficha que se va llenando conforme suelta datos
+  // (la arma la función registrar_lead en Supabase). Aquí se lee de la
+  // vista `leads_vista`, que además trae qué tan cerca quedó del monto
+  // que busca la empresa: eso es lo que permite rescatar al que no llegó.
   let leads=[];
   $("#leadFiltro").addEventListener("change", renderLeads);
+  $("#leadSemaforo").addEventListener("change", renderLeads);
+
   async function loadLeads(){
-    const { data, error } = await db.from("leads").select("*").order("created_at",{ascending:false});
-    if(error){ toast("Error cargando leads: "+error.message,true); return; }
+    // Primero la vista con el semáforo; si todavía no se corre el SQL del
+    // paso 10, el panel no se cae: usa la tabla pelona.
+    let { data, error } = await db.from("leads_vista").select("*")
+      .order("actualizado_at",{ascending:false});
+    if(error){
+      ({ data, error } = await db.from("leads").select("*").order("created_at",{ascending:false}));
+      if(error){ toast("Error cargando leads: "+error.message,true); return; }
+    }
     leads=data||[]; renderLeads();
   }
-  function waLink(l){
+
+  function waNum(l){
     let num=(l.whatsapp||"").replace(/\D/g,"");
     if(num && num.length===10) num="52"+num;
-    return num? `<a href="https://wa.me/${num}" target="_blank">${esc(l.whatsapp)}</a>` : '<span class="muted">—</span>';
+    return num||"";
   }
+  function waLink(l){
+    const num=waNum(l);
+    return num? `<a href="https://wa.me/${num}" target="_blank" onclick="event.stopPropagation()">${esc(l.whatsapp)}</a>`
+              : '<span class="muted">—</span>';
+  }
+  const TIPO={terreno:"🏞️ Lote",casa:"🏡 Casa",construccion:"🏗️ Construir"};
+  const terrenoPill = t => t===true?'<span class="pill ok">Sí</span>'
+                          :(t===false?'<span class="pill">No</span>':'<span class="muted">—</span>');
+
+  // Barra de qué tan cerca está del monto. Sin umbrales configurados
+  // (paso 10 sin correr) simplemente no se pinta nada.
+  function avanceCell(l){
+    if(l.avance_pct==null) return '<span class="muted">—</span>';
+    const pct=Number(l.avance_pct), sem=l.semaforo||"bajo";
+    const ancho=Math.max(3,Math.min(100,pct));
+    return `<div class="avance sem-${sem}"><span class="barra"><i style="width:${ancho}%"></i></span>`
+         + `<b>${pct}%</b></div>`
+         + (Number(l.falta_mxn)>0 ? `<span class="falta ${sem}">faltan ${money(l.falta_mxn)}</span>` : '');
+  }
+
+  // Versión corta del semáforo, la que se ve en celular junto al nombre.
+  function miniSem(l){
+    if(l.avance_pct==null) return "";
+    const sem=l.semaforo||"bajo";
+    const icono={fuerte:"🔥",cerca:"🟡",bajo:"⚪"}[sem]||"";
+    // Cifra corta para que quepa en la columna angosta del celular.
+    const corto = n => n>=1000000 ? "$"+(n/1000000).toFixed(1).replace(/\.0$/,"")+"M"
+                                  : "$"+Math.round(n/1000)+" mil";
+    const falta=Number(l.falta_mxn)>0 ? " · faltan "+corto(Number(l.falta_mxn)) : "";
+    return `<span class="mini-sem ${sem}">${icono} ${l.avance_pct}%${falta}</span>`;
+  }
+
   function renderLeads(){
-    const f=$("#leadFiltro").value;
-    const list=leads.filter(l=>!f||l.estado===f);
-    $("#leadCount").textContent=list.length+" lead"+(list.length===1?"":"s");
+    const f=$("#leadFiltro").value, s=$("#leadSemaforo").value;
+    let list=leads.filter(l=>(!f||l.estado===f) && (!s||(l.semaforo||"sin_dato")===s));
+    // Al buscar negociables, los más cercanos primero.
+    if(s==="cerca"||s==="bajo") list=list.slice().sort((a,b)=>(b.avance_pct||0)-(a.avance_pct||0));
+    const cerca=leads.filter(l=>l.semaforo==="cerca").length;
+    $("#leadCount").textContent=list.length+" lead"+(list.length===1?"":"s")
+      + (cerca&&!s ? ` · ${cerca} cerca del monto` : "");
     const tb=$("#leadTable tbody");
-    if(!list.length){ tb.innerHTML='<tr><td colspan="7" class="empty">Sin leads todavía.</td></tr>'; return; }
-    const terr = t => t===true?'<span class="pill ok">Sí</span>':(t===false?'<span class="pill">No</span>':'<span class="muted">—</span>');
-    tb.innerHTML=list.map(l=>`<tr>
-      <td>${fecha(l.created_at)}<br><span class="pill ${l.plataforma==='instagram'?'info':''}">${esc(l.plataforma||'')}</span></td>
-      <td>${esc(l.interes||l.notas||"")}</td>
+    if(!list.length){ tb.innerHTML='<tr><td colspan="8" class="empty">Sin leads con ese filtro.</td></tr>'; return; }
+    tb.innerHTML=list.map(l=>`<tr class="lead" data-ficha="${l.id}">
+      <td><b>${esc(l.nombre||"Sin nombre")}</b><br>
+          <span class="pill ${l.plataforma==='instagram'?'info':''}">${esc(l.plataforma||'')}</span>
+          <span class="cuando"> ${fecha(l.actualizado_at||l.created_at)}</span>
+          ${miniSem(l)}</td>
+      <td>${esc(l.interes||"")}</td>
+      <td>${TIPO[l.tipo_interes]||'<span class="muted">—</span>'}</td>
       <td>${money(l.presupuesto_mxn)}${l.presupuesto_texto?`<br><span class="muted">“${esc(l.presupuesto_texto)}”</span>`:''}</td>
-      <td>${terr(l.tiene_terreno)}${l.zona_terreno?`<br><span class="muted">${esc(l.zona_terreno)}</span>`:''}</td>
+      <td>${avanceCell(l)}</td>
+      <td>${terrenoPill(l.tiene_terreno)}${l.zona_terreno?`<br><span class="muted">${esc(l.zona_terreno)}</span>`:''}</td>
       <td>${waLink(l)}</td>
-      <td>${esc(l.plataforma||"")}</td>
-      <td><select data-lead="${l.id}">
-        ${["nuevo","calificado","contactado","cerrado"].map(s=>`<option value="${s}" ${l.estado===s?"selected":""}>${s}</option>`).join("")}
-      </select></td></tr>`).join("");
-    tb.querySelectorAll("[data-lead]").forEach(sel=>sel.addEventListener("change", async ()=>{
-      const { error } = await db.from("leads").update({estado:sel.value}).eq("id",sel.dataset.lead);
-      if(error){ toast("Error: "+error.message,true); } else { toast("Lead actualizado"); const l=leads.find(x=>x.id===sel.dataset.lead); if(l) l.estado=sel.value; }
-    }));
+      <td><span class="pill ${l.estado==='cerrado'?'':(l.estado==='contactado'?'info':'ok')}">${esc(l.estado)}</span></td>
+    </tr>`).join("");
+    tb.querySelectorAll("[data-ficha]").forEach(tr=>
+      tr.addEventListener("click", ()=>abrirFicha(tr.dataset.ficha)));
   }
+
+  // ---------- FICHA DEL PROSPECTO ----------
+  let fichaActual=null;
+  function abrirFicha(id){
+    const l=leads.find(x=>x.id===id); if(!l) return;
+    fichaActual=l;
+    $("#ld_titulo").textContent=l.nombre||"Prospecto sin nombre";
+    const fila=(k,v)=>v?`<dt>${k}</dt><dd>${v}</dd>`:"";
+    $("#ld_ficha").innerHTML=
+      fila("Llegó por", esc(l.plataforma||"—")+" · "+fecha(l.created_at))
+    + fila("Busca", (TIPO[l.tipo_interes]||"—"))
+    + fila("Le interesa", esc(l.interes||""))
+    + fila("Presupuesto", money(l.presupuesto_mxn)
+        + (l.presupuesto_texto?` <span class="muted">“${esc(l.presupuesto_texto)}”</span>`:""))
+    + (l.avance_pct!=null ? fila("Qué tan cerca",
+        `${avanceCell(l)}<span class="muted" style="font-size:12px">del monto buscado (${money(l.umbral_aplicable)})</span>`) : "")
+    + fila("Terreno propio", terrenoPill(l.tiene_terreno)+(l.zona_terreno?" · "+esc(l.zona_terreno):""))
+    + fila("WhatsApp", waLink(l))
+    + fila("Última vez", fecha(l.actualizado_at||l.created_at));
+    $("#ld_estado").value=l.estado||"nuevo";
+    $("#ld_notas").value=l.notas||"";
+    const chat=$("#ld_chat");
+    if(l.psid){ chat.href="bandeja.html?psid="+encodeURIComponent(l.psid); chat.style.display="inline-flex"; }
+    else { chat.style.display="none"; }
+    $("#leadModal").classList.remove("hidden");
+  }
+  $("#ld_close").addEventListener("click", ()=>$("#leadModal").classList.add("hidden"));
+  $("#ld_save").addEventListener("click", async ()=>{
+    if(!fichaActual) return;
+    const { error } = await db.from("leads")
+      .update({ estado:$("#ld_estado").value, notas:$("#ld_notas").value })
+      .eq("id", fichaActual.id);
+    if(error){ toast("Error: "+error.message,true); return; }
+    fichaActual.estado=$("#ld_estado").value; fichaActual.notas=$("#ld_notas").value;
+    toast("Ficha actualizada"); $("#leadModal").classList.add("hidden"); renderLeads();
+  });
 
   // ---------- POSTS ----------
   let posts=[];
