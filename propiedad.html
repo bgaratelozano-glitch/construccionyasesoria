@@ -128,11 +128,11 @@
    ⚠️ CAMBIA ESTOS DOS VALORES (los mismos de panel.html)
    ============================================================ */
 const SUPABASE_URL      = "https://yqymyyhinstfffozvhho.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxeW15eWhpbnN0ZmZmb3p2aGhvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDgyODcyNiwiZXhwIjoyMTAwNDA0NzI2fQ.Jupkl-rOqwlrFlC65kudeiKbZYhmFJYey_vDkD7CbOY";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_bC4f4opuxB7O__KohF6JUw_Whvrza4c";
 const WA_DEFAULT        = "528991611308";
 
 const $ = (id) => document.getElementById(id);
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 const money = n => (n == null || n === "") ? null
   : "$" + Number(n).toLocaleString("es-MX") + " MXN";

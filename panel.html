@@ -168,20 +168,20 @@
      CONFIGURACIÓN — llena estos dos valores (ver la guía)
      Supabase → Project Settings → API:
        • Project URL           → SUPABASE_URL
-       • Project API keys: anon public → SUPABASE_ANON_KEY
+       • Project API keys: anon public → SUPABASE_PUBLISHABLE_KEY
      La llave "anon" es pública y SEGURA para el navegador: está protegida
      por las reglas RLS. NUNCA pongas aquí la llave service_role.
 ==================================================================== -->
 <script>
   const SUPABASE_URL      = "https://yqymyyhinstfffozvhho.supabase.co";     // ej: https://abcd1234.supabase.co
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxeW15eWhpbnN0ZmZmb3p2aGhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4Mjg3MjYsImV4cCI6MjEwMDQwNDcyNn0.otKzvJf3NR6rse6WAteQyax7bYVtCEobn88kZHlHLAU"; // empieza con eyJ...
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_bC4f4opuxB7O__KohF6JUw_Whvrza4c"; // empieza con eyJ...
 </script>
 
 <!-- Login -->
 <div id="login">
   <div class="card">
     <div class="logo">Asesoría Inmobiliaria<small>Panel de administración · INTEGRA AI DYNAMICS</small></div>
-    <div id="cfgwarn" class="cfgwarn hidden">⚠️ Falta configurar SUPABASE_URL y SUPABASE_ANON_KEY en el archivo.</div>
+    <div id="cfgwarn" class="cfgwarn hidden">⚠️ Falta configurar SUPABASE_URL y SUPABASE_PUBLISHABLE_KEY en el archivo.</div>
     <form id="loginForm" style="margin-top:20px">
       <div class="field"><label>Correo</label><input type="email" id="email" required autocomplete="username"/></div>
       <div class="field"><label>Contraseña</label><input type="password" id="password" required autocomplete="current-password"/></div>
@@ -383,9 +383,9 @@
 (function(){
   "use strict";
   const $ = s => document.querySelector(s);
-  const cfgOK = SUPABASE_URL.startsWith("http") && !SUPABASE_ANON_KEY.startsWith("PON_AQUI");
+  const cfgOK = SUPABASE_URL.startsWith("http") && !SUPABASE_PUBLISHABLE_KEY.startsWith("PON_AQUI");
   if(!cfgOK){ $("#cfgwarn").classList.remove("hidden"); }
-  const db = cfgOK ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+  const db = cfgOK ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
 
   let me = null;            // { id, nombre, rol }
   let props = [];           // cache de propiedades
