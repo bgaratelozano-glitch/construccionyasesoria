@@ -339,7 +339,7 @@
           <option value="todas">Todas</option>
         </select>
       </div>
-      <div class="aviso info">Aquí están las dudas que salieron al pasar los Excel al sistema. Cuando el cliente aclare una, márcala como resuelta. Los pagos marcados solo los puede corregir el administrador.</div>
+      <div class="aviso info">Aquí están las dudas que salieron al pasar los Excel al sistema. Cuando el cliente aclare una, márcala como resuelta. Para corregir un pago, abre al cliente y usa “Editar” en ese pago.</div>
       <h3 style="margin:18px 0 10px;font-size:16px">Pagos por revisar <span id="revPagosCount" class="muted"></span></h3>
       <p class="solo-movil">👉 Desliza la tabla a los lados.</p>
       <div class="tablewrap"><table id="revPagos" style="min-width:680px"></table></div>
@@ -584,7 +584,7 @@
   }
   function errMsg(error){
     const m = (error && (error.message||error.details)) || "Error desconocido";
-    if(/row-level security|permission denied/i.test(m)) return "No tienes permiso para esto (solo el administrador).";
+    if(/row-level security|permission denied/i.test(m)) return "Tu usuario no tiene permiso para esto. Revisa que tenga perfil en la tabla perfiles.";
     return m;
   }
 
@@ -604,7 +604,8 @@
     if(booted) return; booted=true;
     const { data:perfil } = await db.from("perfiles").select("*").eq("id", session.user.id).maybeSingle();
     me = perfil || { id:session.user.id, nombre:session.user.email, rol:"asistente" };
-    esAdmin = me.rol==="admin";
+    // Todo el equipo (admin y asistentes) tiene acceso completo; la regla real vive en Supabase: puede_gestionar_cobranza()
+    esAdmin = !!perfil && ["admin","asistente"].includes(perfil.rol);
     $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
     $("#whoName").textContent = me.nombre || session.user.email;
     $("#whoRole").textContent = esAdmin ? "Dueño (admin)" : "Asistente";
