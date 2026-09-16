@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Cobranza · Asesoría Inmobiliaria</title>
+<meta name="theme-color" content="#16212e" />
+<style>
+  :root{
+    --bg:#0f1720; --panel:#16212e; --panel2:#1d2b3a; --line:#2a3a4d;
+    --text:#e8eef5; --muted:#93a4b8; --brand:#2d7ff9; --brand2:#1e5fd0;
+    --ok:#1fb26b; --warn:#e0a316; --bad:#e0574b; --chip:#22344a;
+    /* Gráfica de ingresos (paleta validada contra el fondo #16212e) */
+    --s-mens:#3987e5; --s-eng:#d95926; --s-liq:#199e70; --s-otro:#5a6b80;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--text);font-size:15px;line-height:1.45}
+  a{color:var(--brand)}
+  button{font:inherit;cursor:pointer;border:none;border-radius:9px;padding:9px 14px;
+    background:var(--brand);color:#fff;font-weight:600}
+  button:hover{background:var(--brand2)}
+  button:disabled{opacity:.55;cursor:default}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--text);font-weight:500}
+  button.ghost:hover{background:var(--panel2)}
+  button.danger{background:var(--bad)}
+  button.small{padding:6px 10px;font-size:13px}
+  button.link{background:none;color:var(--brand);padding:0;font-weight:600;text-align:left}
+  button.link:hover{background:none;text-decoration:underline}
+  input,select,textarea{width:100%;padding:9px 11px;border-radius:9px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--text);font:inherit}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--brand)}
+  input[type=checkbox]{width:auto}
+  label{display:block;font-size:12.5px;color:var(--muted);margin:0 0 5px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .row>div{flex:1;min-width:140px}
+  .hidden{display:none !important}
+  .muted{color:var(--muted)}
+  .num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;background:var(--chip);white-space:nowrap}
+  .pill.ok{background:rgba(31,178,107,.18);color:#5fe3a3}
+  .pill.warn{background:rgba(224,163,22,.18);color:#f2c65a}
+  .pill.bad{background:rgba(224,87,75,.18);color:#f29187}
+  .pill.info{background:rgba(45,127,249,.18);color:#8fbcff}
+
+  #login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px}
+  #login .card{width:100%;max-width:380px}
+  .logo{font-weight:800;font-size:20px;letter-spacing:.3px}
+  .logo small{display:block;font-weight:500;color:var(--muted);font-size:12px;letter-spacing:0}
+
+  header{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:14px;
+    padding:12px 18px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  header .who{margin-left:auto;text-align:right;font-size:13px}
+  nav{display:flex;gap:6px;padding:10px 18px;background:var(--panel);border-bottom:1px solid var(--line);
+    position:sticky;top:57px;z-index:4;flex-wrap:wrap}
+  nav button{background:transparent;color:var(--muted);font-weight:600;border-radius:9px}
+  nav button.active{background:var(--brand);color:#fff}
+  nav a.navlink{display:inline-flex;align-items:center;gap:7px;text-decoration:none;
+    color:var(--muted);font-weight:600;border-radius:9px;padding:9px 14px}
+  nav a.navlink:hover{background:var(--panel2);color:var(--text)}
+  nav .sp{margin-left:auto}
+  main{max-width:1100px;margin:0 auto;padding:20px 18px 60px}
+  .bar{display:flex;align-items:center;gap:12px;margin:0 0 16px;flex-wrap:wrap}
+  .bar h2{margin:0;font-size:19px}
+  .bar .sp{margin-left:auto}
+
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.4px}
+  th.num{text-align:right}
+  tfoot td{font-weight:700;border-top:2px solid var(--line);border-bottom:none}
+  .tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+  .empty{padding:36px;text-align:center;color:var(--muted)}
+  .aviso{background:rgba(224,163,22,.10);border:1px solid rgba(224,163,22,.55);color:#f2d38a;
+    padding:12px 16px;border-radius:12px;margin:0 0 16px;font-size:14px}
+  .aviso b{color:#f2c65a}
+  .aviso.info{background:rgba(45,127,249,.08);border-color:rgba(45,127,249,.45);color:#b9d3ff}
+
+  /* Tarjetas de resumen */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin:0 0 18px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .kpi .lbl{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:7px}
+  .kpi .val{font-size:22px;font-weight:750;margin-top:4px;font-variant-numeric:tabular-nums}
+  .kpi .sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .dot{width:10px;height:10px;border-radius:3px;display:inline-block;flex:0 0 auto}
+
+  /* Buscador */
+  .buscador{position:relative;margin:0 0 18px}
+  .buscador input{font-size:17px;padding:13px 14px 13px 42px;border-radius:12px}
+  .buscador .lupa{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+  .resultados{display:flex;flex-direction:column;gap:8px}
+  .res{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;
+    display:flex;gap:12px;align-items:center;text-align:left;color:var(--text);font-weight:400;width:100%}
+  .res:hover{background:var(--panel2)}
+  .res .nom{font-weight:700}
+  .res .der{margin-left:auto;text-align:right}
+  mark{background:rgba(45,127,249,.30);color:inherit;border-radius:3px;padding:0 1px}
+
+  /* Estado de cuenta */
+  .cliente-head{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;margin:0 0 16px}
+  .cliente-head h2{margin:0;font-size:21px}
+  .contrato{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin:0 0 16px;overflow:hidden}
+  .contrato .top{padding:14px 16px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;border-bottom:1px solid var(--line)}
+  .contrato .top h3{margin:0;font-size:17px}
+  .contrato .acts{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .cifras{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 16px;padding:14px 16px}
+  .cifras dt{font-size:12px;color:var(--muted)}
+  .cifras dd{margin:1px 0 0;font-weight:650;font-variant-numeric:tabular-nums}
+  .progreso{margin:0 16px 14px;height:8px;border-radius:99px;background:#0d1620;overflow:hidden}
+  .progreso i{display:block;height:100%;background:var(--ok);border-radius:99px}
+  .pagos td{font-size:13.5px}
+  .pagos tr.rev td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+  .tipo{font-size:11.5px}
+  .nota-rev{display:block;font-size:12px;color:#f2c65a;margin-top:2px}
+
+  /* Gráfica */
+  .chart{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 18px}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:0 0 10px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .plot{position:relative;height:230px;display:flex;align-items:flex-end;gap:6px;padding:0 0 22px 56px}
+  .plot .grid{position:absolute;left:56px;right:0;border-top:1px solid rgba(147,164,184,.14)}
+  .plot .grid span{position:absolute;left:-56px;top:-8px;width:50px;text-align:right;font-size:11px;color:var(--muted)}
+  .col{flex:1;min-width:6px;height:100%;display:flex;flex-direction:column-reverse;justify-content:flex-start;position:relative;cursor:default}
+  .col .seg{width:100%;border-top:2px solid var(--panel);flex:0 0 auto}
+  .col .mes{position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--muted);white-space:nowrap}
+  .col:hover .seg{filter:brightness(1.18)}
+  .tip{position:fixed;z-index:60;background:#0b131c;border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+    font-size:13px;pointer-events:none;min-width:190px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+  .tip .r{display:flex;gap:10px;justify-content:space-between;align-items:center}
+  .tip .r span:first-child{display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
+
+  /* Lotes */
+  .manzana{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 12px}
+  .manzana h4{margin:0 0 10px;font-size:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .lotes-grid{display:flex;flex-wrap:wrap;gap:6px}
+  .lt{min-width:46px;padding:6px 8px;border-radius:8px;font-size:12.5px;font-weight:700;text-align:center;
+    border:1px solid var(--line);background:var(--panel2);color:var(--muted);cursor:pointer}
+  .lt.disponible{background:rgba(31,178,107,.16);border-color:rgba(31,178,107,.55);color:#7ff0b8}
+  .lt.vendido{background:#1a2634;color:#6f8196}
+  .lt.otro{background:rgba(224,163,22,.14);border-color:rgba(224,163,22,.5);color:#f2c65a}
+  .lt.hueco{background:transparent;border-style:dashed;color:#5a6b80;cursor:default}
+
+  /* Modal */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-start;
+    justify-content:center;padding:24px;overflow:auto;z-index:20}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;width:100%;max-width:640px}
+  .modal h3{margin:0 0 16px}
+  .field{margin-bottom:12px}
+  .aplicar{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:0 0 12px}
+  .aplicar .it{display:flex;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid var(--line)}
+  .aplicar .it:last-child{border-bottom:none}
+  .aplicar .it .desc{flex:1;font-size:14px}
+  .aplicar .it input[type=number]{width:140px}
+  .checklist{max-height:230px;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:6px}
+  .checklist label{display:flex;gap:8px;align-items:center;color:var(--text);font-size:14px;margin:0;padding:6px 8px;border-radius:8px;cursor:pointer}
+  .checklist label:hover{background:var(--panel2)}
+  .sugerencias{border:1px solid var(--line);border-radius:10px;margin-top:6px;overflow:hidden}
+  .sugerencias button{display:block;width:100%;text-align:left;background:var(--panel2);color:var(--text);border-radius:0;font-weight:500;border-bottom:1px solid var(--line)}
+  .sugerencias button:last-child{border-bottom:none}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111c28;
+    border:1px solid var(--line);padding:11px 18px;border-radius:10px;z-index:70;opacity:0;transition:.25s;pointer-events:none}
+  .toast.show{opacity:1}
+  .toast.bad{border-color:var(--bad)}
+  .cfgwarn{background:rgba(224,163,22,.12);border:1px solid var(--warn);color:#f2c65a;padding:12px 16px;border-radius:10px;margin:16px}
+  .solo-movil{display:none}
+
+  @media (max-width:760px){
+    header{position:static;padding:10px 12px;gap:10px;padding-top:calc(10px + env(safe-area-inset-top))}
+    header .logo{font-size:15px}
+    header .who{font-size:12px}
+    #logout{margin-left:auto}
+    nav{top:0;padding:8px 10px;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    nav::-webkit-scrollbar{display:none}
+    nav button,nav a.navlink{flex:0 0 auto;white-space:nowrap;padding:10px 12px;min-height:42px}
+    nav .sp{display:none}
+    button.small{padding:9px 12px;font-size:13.5px}
+    main{padding:14px 12px 48px}
+    .bar h2{font-size:17px}
+    input,select,textarea{font-size:16px}
+    #login{min-height:100dvh}
+    .card{padding:20px}
+    .kpis{grid-template-columns:1fr 1fr;gap:8px}
+    .kpi{padding:11px 12px}
+    .kpi .val{font-size:17px}
+    th,td{padding:8px 7px}
+    .contrato .acts{margin-left:0;width:100%}
+    .cifras{grid-template-columns:1fr 1fr}
+    .pagos{min-width:620px}
+    .ingresos-tabla{min-width:640px}
+    .plot{height:190px;padding-left:44px;gap:3px}
+    .plot .grid{left:44px}
+    .plot .grid span{left:-44px;width:40px}
+    .col .mes{font-size:10px}
+    .col:nth-child(even) .mes{display:none}
+    .overlay{padding:10px}
+    .modal{padding:16px;border-radius:14px}
+    .row{gap:10px}
+    .row>div{min-width:calc(50% - 5px)}
+    .aplicar .it{flex-wrap:wrap}
+    .aplicar .it input[type=number]{width:100%}
+    .toast{left:12px;right:12px;transform:none;text-align:center}
+    .solo-movil{display:block;font-size:12.5px;color:var(--muted);margin:0 0 8px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================================================================
+     CONFIGURACIÓN — mismos valores que panel.html
+     La llave publishable es pública y segura: la protegen las reglas RLS.
+     NUNCA pongas aquí la llave service_role.
+==================================================================== -->
+<script>
+  const SUPABASE_URL      = "https://yqymyyhinstfffozvhho.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_bC4f4opuxB7O__KohF6JUw_Whvrza4c";
+</script>
+
+<!-- Login -->
+<div id="login" class="hidden">
+  <div class="card">
+    <div class="logo">Asesoría Inmobiliaria<small>Cobranza de lotes · INTEGRA AI DYNAMICS</small></div>
+    <div id="cfgwarn" class="cfgwarn hidden">⚠️ Falta configurar SUPABASE_URL y SUPABASE_PUBLISHABLE_KEY en el archivo.</div>
+    <form id="loginForm" style="margin-top:20px">
+      <div class="field"><label>Correo</label><input type="email" id="email" required autocomplete="username"/></div>
+      <div class="field"><label>Contraseña</label><input type="password" id="password" required autocomplete="current-password"/></div>
+      <div id="loginErr" class="pill bad hidden" style="margin-bottom:12px"></div>
+      <button type="submit" style="width:100%">Entrar</button>
+    </form>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app" class="hidden">
+  <header>
+    <div class="logo" style="font-size:16px">Asesoría Inmobiliaria<small>Cobranza de lotes</small></div>
+    <div class="who">
+      <div id="whoName">—</div>
+      <div class="muted"><span id="whoRole" class="pill info"></span></div>
+    </div>
+    <button class="ghost small" id="logout">Salir</button>
+  </header>
+  <nav>
+    <a class="navlink" href="panel.html">← Panel</a>
+    <button data-tab="clientes" class="active">👥 Clientes</button>
+    <button data-tab="ingresos">📊 Ingresos</button>
+    <button data-tab="lotes">🗺️ Lotes</button>
+    <button data-tab="revision">⚠️ Revisión <span id="revCount" class="pill warn hidden" style="margin-left:4px"></span></button>
+  </nav>
+  <main>
+
+    <!-- ===================== CLIENTES ===================== -->
+    <section id="tab-clientes">
+      <div id="vistaBuscar">
+        <div class="bar">
+          <h2>Clientes</h2>
+          <span class="sp"></span>
+          <button class="admin-only hidden" id="btnNuevaVenta">+ Nueva venta</button>
+        </div>
+        <div class="buscador">
+          <span class="lupa">🔍</span>
+          <input id="q" type="search" placeholder="Nombre, apellido, lote (C-26) o teléfono…" autocomplete="off" enterkeyhint="search"/>
+        </div>
+        <div id="resultados" class="resultados"></div>
+        <div id="resumen"></div>
+      </div>
+
+      <div id="vistaCliente" class="hidden">
+        <div class="bar"><button class="ghost small" id="volver">← Buscar otro cliente</button></div>
+        <div id="cliente"></div>
+      </div>
+    </section>
+
+    <!-- ===================== INGRESOS ===================== -->
+    <section id="tab-ingresos" class="hidden">
+      <div class="bar">
+        <h2>Ingreso mensual</h2>
+        <span class="sp"></span>
+        <button class="ghost small" id="ingCsv">⬇ Descargar CSV</button>
+      </div>
+      <div class="row" style="margin:0 0 16px">
+        <div><label>Fraccionamiento</label><select id="ingFracc"></select></div>
+        <div><label>Desde</label><input type="month" id="ingDesde"/></div>
+        <div><label>Hasta</label><input type="month" id="ingHasta"/></div>
+      </div>
+      <div id="ingAviso"></div>
+      <div id="ingKpis" class="kpis"></div>
+      <div class="chart">
+        <div class="legend">
+          <span><i class="dot" style="background:var(--s-mens)"></i>Mensualidades</span>
+          <span><i class="dot" style="background:var(--s-eng)"></i>Enganches</span>
+          <span><i class="dot" style="background:var(--s-liq)"></i>Liquidaciones</span>
+          <span id="legOtro"><i class="dot" style="background:var(--s-otro)"></i>Sin concepto</span>
+        </div>
+        <div id="ingPlot" class="plot"></div>
+      </div>
+      <p class="solo-movil">👉 Desliza la tabla a los lados.</p>
+      <div class="tablewrap"><table class="ingresos-tabla" id="ingTabla"></table></div>
+      <div id="ingDesglose" style="margin-top:18px"></div>
+    </section>
+
+    <!-- ===================== LOTES ===================== -->
+    <section id="tab-lotes" class="hidden">
+      <div class="bar">
+        <h2>Lotes</h2>
+        <span class="sp"></span>
+        <button class="ghost small" id="lotCsv">⬇ CSV disponibles</button>
+        <button class="small admin-only hidden" id="btnAgregarLotes">+ Agregar lotes al catálogo</button>
+      </div>
+      <div class="row" style="margin:0 0 16px">
+        <div><label>Fraccionamiento</label><select id="lotFracc"></select></div>
+        <div><label>Mostrar</label><select id="lotEstado">
+          <option value="">Todos los lotes</option>
+          <option value="disponible">Solo disponibles</option>
+          <option value="vendido">Solo vendidos</option>
+          <option value="otro">Propietario / pendiente</option>
+        </select></div>
+        <div><label>Manzana</label><select id="lotManzana"><option value="">Todas</option></select></div>
+      </div>
+      <div id="lotAviso"></div>
+      <div id="lotKpis" class="kpis"></div>
+      <div class="legend" style="margin:0 0 12px">
+        <span><i class="lt disponible" style="min-width:18px;padding:2px 6px">&nbsp;</i>Disponible</span>
+        <span><i class="lt vendido" style="min-width:18px;padding:2px 6px">&nbsp;</i>Vendido</span>
+        <span><i class="lt otro" style="min-width:18px;padding:2px 6px">&nbsp;</i>Propietario / pendiente</span>
+        <span><i class="lt hueco" style="min-width:18px;padding:2px 6px">&nbsp;</i>No registrado (¿existe?)</span>
+      </div>
+      <div id="lotManzanas"></div>
+    </section>
+
+    <!-- ===================== REVISIÓN ===================== -->
+    <section id="tab-revision" class="hidden">
+      <div class="bar">
+        <h2>Pendientes de revisión</h2>
+        <span class="sp"></span>
+        <select id="revFracc" style="width:auto"></select>
+        <select id="revVer" style="width:auto">
+          <option value="pendientes">Sin resolver</option>
+          <option value="todas">Todas</option>
+        </select>
+      </div>
+      <div class="aviso info">Aquí están las dudas que salieron al pasar los Excel al sistema. Cuando el cliente aclare una, márcala como resuelta. Los pagos marcados solo los puede corregir el administrador.</div>
+      <h3 style="margin:18px 0 10px;font-size:16px">Pagos por revisar <span id="revPagosCount" class="muted"></span></h3>
+      <p class="solo-movil">👉 Desliza la tabla a los lados.</p>
+      <div class="tablewrap"><table id="revPagos" style="min-width:680px"></table></div>
+      <h3 style="margin:22px 0 10px;font-size:16px">Incidencias de la importación <span id="revIncCount" class="muted"></span></h3>
+      <div class="tablewrap"><table id="revInc" style="min-width:680px"></table></div>
+    </section>
+  </main>
+</div>
+
+<!-- ===================== MODAL: REGISTRAR PAGO ===================== -->
+<div id="pagoModal" class="overlay hidden">
+  <div class="modal">
+    <h3 id="pg_titulo">Registrar pago</h3>
+    <input type="hidden" id="pg_id"/>
+    <div class="row">
+      <div class="field"><label>Fecha *</label><input type="date" id="pg_fecha"/></div>
+      <div class="field"><label>Tipo *</label><select id="pg_tipo">
+        <option value="mensualidad">Mensualidad / abono</option>
+        <option value="enganche">Enganche / separo</option>
+        <option value="liquidacion">Liquidación</option>
+        <option value="sin_concepto">Sin concepto</option>
+      </select></div>
+      <div class="field"><label>Núm. de recibo</label><input id="pg_recibo" placeholder="T1402"/></div>
+    </div>
+    <div class="field"><label>Concepto</label><input id="pg_concepto" placeholder="MENSUALIDAD SEPTIEMBRE"/></div>
+
+    <div id="pg_aplicarBox">
+      <label>¿A qué lote(s) se aplica? <span class="muted">— un mismo recibo puede repartirse entre varios lotes del cliente</span></label>
+      <div id="pg_aplicar" class="aplicar"></div>
+      <div class="bar" style="margin:-4px 0 12px"><span class="muted">Total del recibo</span><span class="sp"></span><b id="pg_total">$0</b></div>
+    </div>
+
+    <div id="pg_editBox" class="hidden">
+      <div class="row">
+        <div class="field"><label>Monto *</label><input type="number" id="pg_monto" step="0.01" min="0"/></div>
+        <div class="field"><label>Lote(s)</label><input id="pg_lotes" disabled/></div>
+      </div>
+      <div class="field"><label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" id="pg_rev"/> Requiere revisión</label></div>
+      <div class="field"><label>Nota de revisión</label><textarea id="pg_nota" rows="2"></textarea></div>
+    </div>
+
+    <div class="row" style="margin-top:8px">
+      <button id="pg_save">Guardar pago</button>
+      <button class="ghost" id="pg_cancel">Cancelar</button>
+      <span class="sp" style="flex:1"></span>
+      <button class="danger hidden" id="pg_delete">Borrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: EDITAR CONTRATO ===================== -->
+<div id="ctModal" class="overlay hidden">
+  <div class="modal">
+    <h3 id="ct_titulo">Contrato</h3>
+    <input type="hidden" id="ct_id"/>
+    <input type="hidden" id="ct_comp"/>
+    <div class="row">
+      <div class="field" style="flex:2"><label>Comprador</label><input id="ct_nombre"/></div>
+      <div class="field"><label>Teléfono</label><input id="ct_tel" inputmode="tel"/></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Precio total *</label><input type="number" id="ct_precio" step="0.01"/></div>
+      <div class="field"><label>Enganche pactado</label><input type="number" id="ct_eng" step="0.01"/></div>
+      <div class="field"><label>Mensualidad</label><input type="number" id="ct_mens" step="0.01"/></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Plazo (meses)</label><input type="number" id="ct_plazo" min="1"/></div>
+      <div class="field"><label>1ª mensualidad</label><input type="date" id="ct_inicio"/></div>
+      <div class="field"><label>Día de pago</label><input type="number" id="ct_dia" min="1" max="31"/></div>
+    </div>
+    <div class="aviso info" style="font-size:13px;margin-top:0">El <b>adeudo</b> se calcula solo cuando el contrato tiene <b>mensualidad</b> y <b>fecha de la 1ª mensualidad</b>.</div>
+    <div class="row">
+      <div class="field"><label>Promotor</label><select id="ct_prom"></select></div>
+      <div class="field"><label>Estatus</label><select id="ct_estatus">
+        <option value="activo">Activo</option><option value="liquidado">Liquidado</option>
+        <option value="en_revision">En revisión</option><option value="cancelado">Cancelado (libera el lote)</option>
+      </select></div>
+      <div class="field"><label>Entregado</label><select id="ct_entregado"><option value="false">No</option><option value="true">Sí</option></select></div>
+    </div>
+    <div class="field"><label>Notas</label><textarea id="ct_notas" rows="3"></textarea></div>
+    <div class="row" style="margin-top:8px">
+      <button id="ct_save">Guardar</button>
+      <button class="ghost" id="ct_cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: NUEVA VENTA ===================== -->
+<div id="ventaModal" class="overlay hidden">
+  <div class="modal">
+    <h3>Nueva venta</h3>
+    <div class="field">
+      <label>Comprador * <span class="muted">— busca si ya existe o escribe un nombre nuevo</span></label>
+      <input id="vt_nombre" autocomplete="off" placeholder="Nombre completo"/>
+      <input type="hidden" id="vt_comp"/>
+      <div id="vt_sug" class="sugerencias hidden"></div>
+      <div id="vt_compSel" class="muted hidden" style="margin-top:6px;font-size:13px"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Teléfono</label><input id="vt_tel" inputmode="tel"/></div>
+      <div class="field"><label>Fraccionamiento *</label><select id="vt_fracc"></select></div>
+    </div>
+    <div class="field">
+      <label>Lote(s) disponibles * <span class="muted" id="vt_lotesInfo"></span></label>
+      <input id="vt_lotFiltro" placeholder="Filtrar: A-1, manzana B…" style="margin-bottom:6px"/>
+      <div id="vt_lotes" class="checklist"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Precio total *</label><input type="number" id="vt_precio" step="0.01"/></div>
+      <div class="field"><label>Enganche pactado</label><input type="number" id="vt_eng" step="0.01"/></div>
+      <div class="field"><label>Mensualidad</label><input type="number" id="vt_mens" step="0.01"/></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Plazo (meses)</label><input type="number" id="vt_plazo" min="1"/></div>
+      <div class="field"><label>1ª mensualidad</label><input type="date" id="vt_inicio"/></div>
+      <div class="field"><label>Día de pago</label><input type="number" id="vt_dia" min="1" max="31"/></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Promotor</label><select id="vt_prom"></select></div>
+    </div>
+    <div class="field"><label>Notas</label><textarea id="vt_notas" rows="2"></textarea></div>
+    <div class="row" style="margin-top:8px">
+      <button id="vt_save">Crear venta</button>
+      <button class="ghost" id="vt_cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: AGREGAR LOTES ===================== -->
+<div id="altaLotesModal" class="overlay hidden">
+  <div class="modal" style="max-width:520px">
+    <h3>Agregar lotes al catálogo</h3>
+    <p class="muted" style="margin:-6px 0 14px;font-size:13.5px">Para cargar el plano: agrega una manzana por rango. Los lotes que ya existen no se duplican.</p>
+    <div class="row">
+      <div class="field"><label>Fraccionamiento *</label><select id="al_fracc"></select></div>
+      <div class="field"><label>Manzana *</label><input id="al_manzana" maxlength="4" placeholder="P"/></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Del lote *</label><input type="number" id="al_desde" min="1" placeholder="1"/></div>
+      <div class="field"><label>Al lote *</label><input type="number" id="al_hasta" min="1" placeholder="22"/></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>m² (opcional)</label><input type="number" id="al_m2" step="0.01"/></div>
+      <div class="field"><label>Precio de lista (opcional)</label><input type="number" id="al_precio" step="0.01"/></div>
+    </div>
+    <div class="field"><label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" id="al_completo"/> Con esto el catálogo de este fraccionamiento ya está completo</label></div>
+    <div class="row" style="margin-top:8px">
+      <button id="al_save">Agregar</button>
+      <button class="ghost" id="al_cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: HISTORIAL ===================== -->
+<div id="histModal" class="overlay hidden">
+  <div class="modal" style="max-width:720px">
+    <h3>Historial de cambios</h3>
+    <div class="tablewrap"><table id="histTabla"></table></div>
+    <div class="row" style="margin-top:14px"><button class="ghost" id="hist_close">Cerrar</button></div>
+  </div>
+</div>
+
+<!-- Confirmación -->
+<div id="confirmModal" class="overlay hidden">
+  <div class="modal" style="max-width:440px">
+    <h3 id="cf_titulo">¿Borrar?</h3>
+    <p id="cf_texto" style="margin:0 0 6px;white-space:pre-line"></p>
+    <p id="cf_extra" class="muted" style="margin:0 0 20px;font-size:13.5px"></p>
+    <div class="row">
+      <button class="ghost" id="cf_no" style="flex:1">Cancelar</button>
+      <button class="danger" id="cf_si" style="flex:1">Sí, borrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="tip" class="tip hidden"></div>
+<div id="toast" class="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+<script>
+(function(){
+  "use strict";
+  const $  = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
+  const cfgOK = SUPABASE_URL.startsWith("http") && !SUPABASE_PUBLISHABLE_KEY.startsWith("PON_AQUI");
+  if(!cfgOK){ $("#cfgwarn").classList.remove("hidden"); }
+  const db = cfgOK ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
+
+  // ---------------- utilidades ----------------
+  let me = null, esAdmin = false;
+  let cuentas = [];          // v_estado_cuenta completo (≈600 filas)
+  let fraccs = [];           // fraccionamientos
+  let promotores = [];
+  const TIPOS = { mensualidad:["Mensualidad","info"], enganche:["Enganche","warn"], liquidacion:["Liquidación","ok"], sin_concepto:["Sin concepto","bad"] };
+
+  const esc = s => (s==null?"":String(s)).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const n2  = v => (v==null||v==="")?null:Number(v);
+  const money = (v, dec) => v==null ? "—" : "$" + Number(v).toLocaleString("es-MX",{minimumFractionDigits:dec?2:0, maximumFractionDigits:dec?2:0});
+  const moneyC = v => {           // corto para ejes / celular
+    if(v==null) return "—"; const a=Math.abs(v);
+    if(a>=1e6) return "$"+(v/1e6).toFixed(a>=1e7?0:1).replace(/\.0$/,"")+"M";
+    if(a>=1e3) return "$"+Math.round(v/1e3)+"k";
+    return "$"+Math.round(v);
+  };
+  const hoyISO = () => { const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
+  const fechaC = s => { if(!s) return "—"; const [y,m,d]=s.slice(0,10).split("-"); return `${d}/${m}/${y.slice(2)}`; };
+  const MESES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  const mesC = s => { const [y,m]=s.slice(0,7).split("-"); return MESES[+m-1]+" "+y.slice(2); };
+  const quitaAcentos = s => (s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+  const ordenLote = (a,b) => (a.manzana||"").localeCompare(b.manzana||"") || ((a.numero_orden??1e9)-(b.numero_orden??1e9));
+
+  function toast(msg, bad){
+    const t=$("#toast"); t.textContent=msg; t.className="toast show"+(bad?" bad":"");
+    clearTimeout(toast._t); toast._t=setTimeout(()=>t.className="toast",3000);
+  }
+  function abrir(id){ $(id).classList.remove("hidden"); }
+  function cerrar(id){ $(id).classList.add("hidden"); }
+  $$(".overlay").forEach(o=>o.addEventListener("mousedown",e=>{ if(e.target===o && o.id!=="confirmModal") o.classList.add("hidden"); }));
+
+  let cfResolver=null;
+  function confirmar(titulo, texto, extra, boton){
+    $("#cf_titulo").textContent=titulo; $("#cf_texto").textContent=texto;
+    $("#cf_extra").textContent=extra||""; $("#cf_extra").style.display=extra?"block":"none";
+    $("#cf_si").textContent=boton||"Sí, borrar";
+    abrir("#confirmModal"); setTimeout(()=>$("#cf_no").focus(),30);
+    return new Promise(r=>cfResolver=r);
+  }
+  function cerrarConfirm(v){ cerrar("#confirmModal"); if(cfResolver){ cfResolver(v); cfResolver=null; } }
+  $("#cf_no").addEventListener("click",()=>cerrarConfirm(false));
+  $("#cf_si").addEventListener("click",()=>cerrarConfirm(true));
+  document.addEventListener("keydown",e=>{
+    if(e.key!=="Escape") return;
+    if(!$("#confirmModal").classList.contains("hidden")) return cerrarConfirm(false);
+    $$(".overlay").forEach(o=>o.classList.add("hidden"));
+  });
+
+  function csv(nombre, filas){
+    const txt = filas.map(r=>r.map(v=>{ const s=v==null?"":String(v); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }).join(",")).join("\n");
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob(["﻿"+txt],{type:"text/csv;charset=utf-8"}));
+    a.download=nombre; document.body.appendChild(a); a.click(); a.remove();
+  }
+  function errMsg(error){
+    const m = (error && (error.message||error.details)) || "Error desconocido";
+    if(/row-level security|permission denied/i.test(m)) return "No tienes permiso para esto (solo el administrador).";
+    return m;
+  }
+
+  // ---------------- auth ----------------
+  $("#loginForm").addEventListener("submit", async e=>{
+    e.preventDefault(); $("#loginErr").classList.add("hidden"); if(!db) return;
+    const { error } = await db.auth.signInWithPassword({ email:$("#email").value.trim(), password:$("#password").value });
+    if(error){ $("#loginErr").textContent="No se pudo entrar: "+error.message; $("#loginErr").classList.remove("hidden"); }
+  });
+  $("#logout").addEventListener("click", async ()=>{ await db.auth.signOut(); location.href="cobranza.html"; });
+
+  let booted=false;
+  async function boot(){
+    if(!db){ $("#login").classList.remove("hidden"); return; }
+    const { data:{ session } } = await db.auth.getSession();
+    if(!session){ $("#login").classList.remove("hidden"); $("#app").classList.add("hidden"); return; }
+    if(booted) return; booted=true;
+    const { data:perfil } = await db.from("perfiles").select("*").eq("id", session.user.id).maybeSingle();
+    me = perfil || { id:session.user.id, nombre:session.user.email, rol:"asistente" };
+    esAdmin = me.rol==="admin";
+    $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
+    $("#whoName").textContent = me.nombre || session.user.email;
+    $("#whoRole").textContent = esAdmin ? "Dueño (admin)" : "Asistente";
+    $$(".admin-only").forEach(el=>el.classList.toggle("hidden", !esAdmin));
+
+    const [f, p] = await Promise.all([
+      db.from("fraccionamientos").select("id,nombre,catalogo_completo").order("nombre"),
+      db.from("promotores").select("id,nombre,activo").order("nombre")
+    ]);
+    if(f.error){ toast("Error: "+errMsg(f.error)+" — ¿ya corriste el SQL del paso 16?", true); return; }
+    fraccs = f.data||[]; promotores = p.data||[];
+    llenarSelects();
+    await cargarCuentas();
+    initIngresos();
+    cargarRevisionContador();
+    const params = new URLSearchParams(location.search);
+    if(params.get("c")) abrirCliente(params.get("c"), false);
+    else if(params.get("tab")) cambiarTab(params.get("tab"));
+  }
+  if(db){ db.auth.onAuthStateChange((_e,s)=>{ if(s) boot(); }); }
+
+  function llenarSelects(){
+    const opts = fraccs.map(x=>`<option value="${x.id}">${esc(x.nombre)}</option>`).join("");
+    $("#ingFracc").innerHTML = `<option value="">General (todos)</option>`+opts;
+    $("#lotFracc").innerHTML = opts;
+    $("#revFracc").innerHTML = `<option value="">Todos</option>`+opts;
+    $("#vt_fracc").innerHTML = opts;
+    $("#al_fracc").innerHTML = opts;
+    const pr = `<option value="">— Sin promotor —</option>`+promotores.map(x=>`<option value="${x.id}">${esc(x.nombre)}</option>`).join("");
+    $("#ct_prom").innerHTML = pr; $("#vt_prom").innerHTML = pr;
+  }
+
+  async function cargarCuentas(){
+    // PostgREST entrega máximo 1000 filas por llamada: se pide por páginas.
+    let todo=[], desde=0;
+    for(;;){
+      const { data, error } = await db.from("v_estado_cuenta").select("*").order("comprador").range(desde, desde+999);
+      if(error){ toast("Error cargando cuentas: "+errMsg(error), true); return; }
+      todo = todo.concat(data||[]); if(!data || data.length<1000) break; desde+=1000;
+    }
+    cuentas = todo;
+    renderResumen();
+  }
+
+  // ---------------- navegación ----------------
+  function cambiarTab(tab){
+    $$("nav button").forEach(x=>x.classList.toggle("active", x.dataset.tab===tab));
+    ["clientes","ingresos","lotes","revision"].forEach(t=>$("#tab-"+t).classList.toggle("hidden", t!==tab));
+    if(tab==="ingresos") cargarIngresos();
+    if(tab==="lotes") cargarLotes();
+    if(tab==="revision") cargarRevision();
+    window.scrollTo(0,0);
+  }
+  $$("nav button").forEach(b=>b.addEventListener("click",()=>{
+    if(b.dataset.tab==="clientes") mostrarBuscar(true);
+    cambiarTab(b.dataset.tab);
+  }));
+  window.addEventListener("popstate", ()=>{
+    const c = new URLSearchParams(location.search).get("c");
+    if(c) abrirCliente(c, false); else mostrarBuscar(false);
+  });
+
+  // =====================================================================
+  // CLIENTES
+  // =====================================================================
+  function mostrarBuscar(pushState){
+    $("#vistaCliente").classList.add("hidden"); $("#vistaBuscar").classList.remove("hidden");
+    if(pushState && location.search) history.pushState({}, "", "cobranza.html");
+    setTimeout(()=>$("#q").focus(), 30);
+  }
+  $("#volver").addEventListener("click", ()=>{ history.pushState({}, "", "cobranza.html"); mostrarBuscar(false); });
+
+  // --- resumen por fraccionamiento (cuando el buscador está vacío) ---
+  function renderResumen(){
+    if(!cuentas.length){ $("#resumen").innerHTML=""; return; }
+    const grupos = {};
+    cuentas.forEach(c=>{
+      const g = grupos[c.fraccionamiento] ||= {cobrado:0,saldo:0,activos:0,liquidados:0,atrasados:0,sinReglas:0,adeudo:0,n:0};
+      g.n++; g.cobrado+=+c.total_pagado;
+      if(c.estatus!=="cancelado") g.saldo+=Math.max(0,+c.saldo);
+      if(c.estado_pago==="liquidado") g.liquidados++; else if(c.estatus!=="cancelado") g.activos++;
+      if(c.estado_pago==="atrasado"){ g.atrasados++; g.adeudo+=+c.adeudo; }
+      if(c.estado_pago==="sin_reglas") g.sinReglas++;
+    });
+    const sinReglas = Object.values(grupos).reduce((s,g)=>s+g.sinReglas,0);
+    let html = `<h3 style="margin:26px 0 12px;font-size:16px">Resumen</h3>`;
+    Object.entries(grupos).forEach(([nombre,g])=>{
+      html += `<div style="margin:0 0 6px;font-weight:700">${esc(nombre)} <span class="muted" style="font-weight:400">· ${g.n} contratos</span></div>
+      <div class="kpis">
+        <div class="kpi"><div class="lbl">Cobrado histórico</div><div class="val">${moneyC(g.cobrado)}</div><div class="sub">${money(g.cobrado)}</div></div>
+        <div class="kpi"><div class="lbl">Saldo por cobrar</div><div class="val">${moneyC(g.saldo)}</div><div class="sub">${money(g.saldo)}</div></div>
+        <div class="kpi"><div class="lbl">Contratos</div><div class="val">${g.activos}</div><div class="sub">activos · ${g.liquidados} liquidados</div></div>
+        <div class="kpi"><div class="lbl">⚠️ Atrasados</div><div class="val">${g.sinReglas===g.n-g.liquidados && g.atrasados===0 ? "—" : g.atrasados}</div><div class="sub">${g.atrasados? money(g.adeudo)+" de adeudo" : (g.sinReglas? g.sinReglas+" sin reglas de cobro" : "al corriente")}</div></div>
+      </div>`;
+    });
+    if(sinReglas) html = `<div class="aviso" style="margin-top:22px"><b>El adeudo aún no se calcula en ${sinReglas} contratos.</b> Falta capturar la mensualidad y la fecha de la 1ª mensualidad (lo estamos confirmando con el cliente). Cuando un contrato las tenga, su adeudo aparece solo.</div>` + html;
+    $("#resumen").innerHTML = html;
+  }
+
+  // --- buscador mientras escribes ---
+  let qTimer=null, qSeq=0;
+  $("#q").addEventListener("input", ()=>{
+    clearTimeout(qTimer);
+    const texto=$("#q").value.trim();
+    if(texto.length<2){ $("#resultados").innerHTML=""; $("#resumen").classList.remove("hidden"); return; }
+    qTimer=setTimeout(()=>buscar(texto), 250);
+  });
+  $("#q").addEventListener("keydown", e=>{
+    if(e.key==="Enter"){ const b=$("#resultados .res"); if(b) b.click(); }
+  });
+  function resaltar(texto, q){
+    const palabras = quitaAcentos(q).split(/\s+/).filter(Boolean);
+    const plano = quitaAcentos(texto);
+    const marcas = new Array(texto.length).fill(false);
+    palabras.forEach(w=>{ let i=plano.indexOf(w); while(i>=0){ for(let k=i;k<i+w.length;k++) marcas[k]=true; i=plano.indexOf(w,i+1);} });
+    let out="", abierto=false;
+    for(let i=0;i<texto.length;i++){
+      if(marcas[i]&&!abierto){ out+="<mark>"; abierto=true; }
+      if(!marcas[i]&&abierto){ out+="</mark>"; abierto=false; }
+      out+=esc(texto[i]);
+    }
+    return out+(abierto?"</mark>":"");
+  }
+  async function buscar(texto){
+    const seq=++qSeq;
+    const { data, error } = await db.rpc("buscar_compradores", { p_texto:texto, p_limite:15 });
+    if(seq!==qSeq) return;   // llegó una respuesta vieja: se ignora
+    if(error){ toast("Error al buscar: "+errMsg(error), true); return; }
+    $("#resumen").classList.add("hidden");
+    const r=$("#resultados");
+    if(!data.length){ r.innerHTML=`<div class="empty">Nadie coincide con “${esc(texto)}”.</div>`; return; }
+    r.innerHTML = data.map(c=>`<button class="res" data-c="${c.comprador_id}">
+        <div><div class="nom">${resaltar(c.comprador||"", texto)}</div>
+          <div class="muted" style="font-size:13px">${resaltar(c.lotes||"", texto)}${c.telefono?` · ${resaltar(c.telefono, texto)}`:""}</div></div>
+        <div class="der"><div class="num" style="font-weight:700">${money(c.saldo_total)}</div>
+          <div style="font-size:12px">${c.atrasados?`<span class="pill bad">⚠ ${money(c.adeudo_total)} atrasado</span>`:(Number(c.saldo_total)<=0?'<span class="pill ok">Liquidado</span>':'<span class="muted">saldo</span>')}</div></div>
+      </button>`).join("");
+    r.querySelectorAll("[data-c]").forEach(b=>b.addEventListener("click",()=>abrirCliente(b.dataset.c, true)));
+  }
+
+  // --- estado de cuenta del cliente ---
+  let clienteActual=null, pagosActuales=[];
+  async function abrirCliente(compradorId, pushState){
+    cambiarTab("clientes");
+    $("#vistaBuscar").classList.add("hidden"); $("#vistaCliente").classList.remove("hidden");
+    if(pushState) history.pushState({c:compradorId}, "", "cobranza.html?c="+compradorId);
+    $("#cliente").innerHTML = `<div class="empty">Cargando…</div>`;
+    const [ct, comp] = await Promise.all([
+      db.from("v_estado_cuenta").select("*").eq("comprador_id", compradorId).order("fraccionamiento").order("lotes"),
+      db.from("compradores").select("*").eq("id", compradorId).maybeSingle()
+    ]);
+    if(ct.error || comp.error){ $("#cliente").innerHTML=`<div class="empty">No se pudo cargar: ${esc(errMsg(ct.error||comp.error))}</div>`; return; }
+    const contratos = ct.data||[];
+    let pagos=[];
+    if(contratos.length){
+      const r = await db.from("pagos_lote").select("*").in("contrato_id", contratos.map(c=>c.contrato_id))
+                  .order("fecha",{ascending:false, nullsFirst:true}).order("fila_origen",{ascending:false});
+      if(r.error){ toast("Error cargando pagos: "+errMsg(r.error), true); }
+      pagos = r.data||[];
+    }
+    clienteActual = { comprador: comp.data, contratos };
+    pagosActuales = pagos;
+    renderCliente();
+  }
+
+  function estadoPill(c){
+    switch(c.estado_pago){
+      case "liquidado":    return '<span class="pill ok">✓ Liquidado</span>';
+      case "cancelado":    return '<span class="pill">Cancelado</span>';
+      case "atrasado":     return `<span class="pill bad">⚠ Atrasado ${Math.floor(c.adeudo/c.mensualidad)||""} ${Math.floor(c.adeudo/c.mensualidad)===1?"mes":"meses"}</span>`;
+      case "al_corriente": return '<span class="pill ok">Al corriente</span>';
+      default:             return '<span class="pill" title="Falta mensualidad o fecha de 1ª mensualidad">Sin reglas de cobro</span>';
+    }
+  }
+
+  function renderCliente(){
+    const { comprador:cp, contratos } = clienteActual;
+    if(!cp){ $("#cliente").innerHTML='<div class="empty">No se encontró el cliente.</div>'; return; }
+    const saldo = contratos.filter(c=>c.estatus!=="cancelado").reduce((s,c)=>s+Math.max(0,+c.saldo),0);
+    const pagado = contratos.reduce((s,c)=>s+(+c.total_pagado),0);
+    const adeudo = contratos.reduce((s,c)=>s+(+c.adeudo||0),0);
+    let tel = cp.telefono ? cp.telefono.replace(/\D/g,"") : "";
+    const wa = tel ? (tel.length===10 ? "52"+tel : tel) : "";
+    let html = `<div class="cliente-head">
+      <div><h2>${esc(cp.nombre)}</h2>
+        <div class="muted" style="margin-top:4px">${cp.telefono?`📱 <a href="https://wa.me/${wa}" target="_blank" rel="noopener">${esc(cp.telefono)}</a>`:"Sin teléfono"}${cp.telefono_alt?` · ${esc(cp.telefono_alt)}`:""}</div></div>
+      <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+        <button id="btnPagoCliente">+ Registrar pago</button>
+      </div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="lbl">Saldo total</div><div class="val">${money(saldo)}</div></div>
+      <div class="kpi"><div class="lbl">Pagado</div><div class="val">${money(pagado)}</div></div>
+      <div class="kpi"><div class="lbl">Adeudo vencido</div><div class="val">${contratos.some(c=>c.estado_pago==="sin_reglas") && !adeudo ? "—" : money(adeudo)}</div>
+        <div class="sub">${(()=>{ const n=contratos.filter(c=>c.estado_pago==="sin_reglas").length; return n ? (n===contratos.length?"faltan reglas de cobro":`${n} contrato(s) sin reglas de cobro`) : ""; })()}</div></div>
+      <div class="kpi"><div class="lbl">Contratos</div><div class="val">${contratos.length}</div></div>
+    </div>`;
+
+    contratos.forEach(c=>{
+      const pagos = pagosActuales.filter(p=>p.contrato_id===c.contrato_id);
+      const pct = c.precio_total>0 ? Math.max(0,Math.min(100, c.total_pagado/c.precio_total*100)) : 0;
+      html += `<div class="contrato">
+        <div class="top">
+          <div><h3>${esc(c.fraccionamiento)} · ${esc(c.lotes||"(sin lote)")}</h3>
+            <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">${estadoPill(c)}
+              ${c.pagos_por_revisar?`<span class="pill warn">${c.pagos_por_revisar} pago(s) por revisar</span>`:""}
+              ${c.entregado?'<span class="pill info">Entregado</span>':""}
+              ${c.promotor?`<span class="pill">Promotor: ${esc(c.promotor)}</span>`:""}</div></div>
+          <div class="acts">
+            <button class="small" data-pago="${c.contrato_id}">+ Pago</button>
+            ${esAdmin?`<button class="ghost small" data-editct="${c.contrato_id}">Editar contrato</button>`:""}
+            <button class="ghost small" data-hist="${c.contrato_id}">Historial</button>
+          </div>
+        </div>
+        <dl class="cifras">
+          <div><dt>Precio</dt><dd>${money(c.precio_total)}</dd></div>
+          <div><dt>Pagado</dt><dd>${money(c.total_pagado)} <span class="muted" style="font-weight:400">(${pct.toFixed(0)}%)</span></dd></div>
+          <div><dt>Saldo</dt><dd>${money(c.saldo)}</dd></div>
+          <div><dt>Enganche pagado</dt><dd>${money(c.enganche_pagado)}${c.enganche_pactado?` <span class="muted" style="font-weight:400">de ${money(c.enganche_pactado)}</span>`:""}</dd></div>
+          <div><dt>Mensualidades pagadas</dt><dd>${money(c.mensualidades_pagadas)}</dd></div>
+          <div><dt>Mensualidad</dt><dd>${c.mensualidad?money(c.mensualidad,true):'<span class="muted">—</span>'}</dd></div>
+          <div><dt>Plazo / 1ª mensualidad</dt><dd>${c.plazo_meses?c.plazo_meses+" meses":"—"} · ${c.fecha_inicio?fechaC(c.fecha_inicio):"—"}</dd></div>
+          <div><dt>Adeudo vencido</dt><dd>${c.adeudo==null?'<span class="muted" title="Falta mensualidad o fecha de 1ª mensualidad">— sin reglas</span>':money(c.adeudo)}</dd></div>
+          <div><dt>Último pago</dt><dd>${fechaC(c.ultimo_pago)}</dd></div>
+        </dl>
+        <div class="progreso"><i style="width:${pct}%"></i></div>
+        ${c.notas?`<div class="muted" style="padding:0 16px 12px;font-size:13px;white-space:pre-line">📝 ${esc(c.notas)}</div>`:""}
+        <div style="overflow-x:auto;border-top:1px solid var(--line)"><table class="pagos">
+          <thead><tr><th>Fecha</th><th>Tipo</th><th class="num">Monto</th><th>Concepto</th><th>Recibo</th>${esAdmin?"<th></th>":""}</tr></thead>
+          <tbody>${pagos.length? pagos.map(p=>`<tr class="${p.requiere_revision?"rev":""}">
+              <td style="white-space:nowrap">${fechaC(p.fecha)}</td>
+              <td><span class="pill tipo ${TIPOS[p.tipo]?.[1]||""}">${TIPOS[p.tipo]?.[0]||esc(p.tipo)}</span></td>
+              <td class="num">${money(p.monto,true)}</td>
+              <td>${esc(p.concepto_original||"")}${p.requiere_revision?`<span class="nota-rev">⚠ ${esc(p.nota_revision||"Por revisar")}</span>`:""}</td>
+              <td>${esc(p.recibo||"—")}</td>
+              ${esAdmin?`<td><button class="ghost small" data-editpago="${p.id}">Editar</button></td>`:""}
+            </tr>`).join("") : `<tr><td colspan="6" class="empty">Sin pagos registrados.</td></tr>`}</tbody>
+        </table></div>
+      </div>`;
+    });
+    $("#cliente").innerHTML = html;
+    $("#btnPagoCliente").addEventListener("click", ()=>abrirPago(contratos.find(c=>c.estatus!=="cancelado" && +c.saldo>0)?.contrato_id || contratos[0]?.contrato_id));
+    $$("#cliente [data-pago]").forEach(b=>b.addEventListener("click",()=>abrirPago(b.dataset.pago)));
+    $$("#cliente [data-editct]").forEach(b=>b.addEventListener("click",()=>abrirContrato(b.dataset.editct)));
+    $$("#cliente [data-editpago]").forEach(b=>b.addEventListener("click",()=>editarPago(b.dataset.editpago)));
+    $$("#cliente [data-hist]").forEach(b=>b.addEventListener("click",()=>verHistorial(b.dataset.hist)));
+  }
+
+  async function refrescarCliente(){
+    const id = clienteActual?.comprador?.id;
+    await cargarCuentas();
+    if(id) await abrirCliente(id, false);
+    cargarRevisionContador();
+  }
+
+  // --- registrar pago (uno o varios lotes con el mismo recibo) ---
+  function abrirPago(contratoId){
+    if(!clienteActual) return;
+    $("#pg_titulo").textContent="Registrar pago"; $("#pg_id").value="";
+    $("#pg_fecha").value=hoyISO(); $("#pg_tipo").value="mensualidad"; $("#pg_recibo").value=""; $("#pg_concepto").value="";
+    $("#pg_aplicarBox").classList.remove("hidden"); $("#pg_editBox").classList.add("hidden"); $("#pg_delete").classList.add("hidden");
+    $("#pg_save").textContent="Guardar pago";
+    const lista = clienteActual.contratos.filter(c=>c.estatus!=="cancelado");
+    $("#pg_aplicar").innerHTML = lista.map(c=>`<div class="it">
+        <input type="checkbox" data-chk="${c.contrato_id}" ${c.contrato_id===contratoId?"checked":""}/>
+        <div class="desc"><b>${esc(c.fraccionamiento)} · ${esc(c.lotes||"")}</b><br><span class="muted" style="font-size:12.5px">Saldo ${money(c.saldo)}${c.mensualidad?` · mensualidad ${money(c.mensualidad,true)}`:""}</span></div>
+        <input type="number" step="0.01" min="0" data-monto="${c.contrato_id}" placeholder="Monto" value="${c.contrato_id===contratoId && c.mensualidad ? c.mensualidad : ""}"/>
+      </div>`).join("");
+    $$("#pg_aplicar [data-monto]").forEach(i=>i.addEventListener("input",()=>{
+      const chk=$(`#pg_aplicar [data-chk="${i.dataset.monto}"]`); chk.checked = Number(i.value)>0; totalPago();
+    }));
+    $$("#pg_aplicar [data-chk]").forEach(c=>c.addEventListener("change",totalPago));
+    totalPago();
+    abrir("#pagoModal");
+    const foco=$(`#pg_aplicar [data-monto="${contratoId}"]`);
+    if(foco){ foco.focus(); foco.select(); }
+  }
+  function totalPago(){
+    let t=0; $$("#pg_aplicar [data-monto]").forEach(i=>{ if($(`#pg_aplicar [data-chk="${i.dataset.monto}"]`).checked) t+=Number(i.value)||0; });
+    $("#pg_total").textContent = money(t,true);
+  }
+  $("#pg_cancel").addEventListener("click",()=>cerrar("#pagoModal"));
+
+  $("#pg_save").addEventListener("click", async ()=>{
+    const fecha=$("#pg_fecha").value, tipo=$("#pg_tipo").value;
+    const recibo=$("#pg_recibo").value.trim().toUpperCase()||null, concepto=$("#pg_concepto").value.trim().toUpperCase()||null;
+    if(!fecha){ toast("Falta la fecha", true); return; }
+    if(fecha>hoyISO()){ const ok=await confirmar("¿Fecha futura?", "La fecha "+fechaC(fecha)+" todavía no llega.", "¿Seguro que es correcta?", "Sí, guardar"); if(!ok) return; }
+    const editId=$("#pg_id").value;
+    const btn=$("#pg_save"); btn.disabled=true;
+    try{
+      if(editId){
+        const monto=Math.round(Number($("#pg_monto").value)*100)/100;
+        if(!(monto>0)){ toast("El monto debe ser mayor a 0", true); return; }
+        const { data, error } = await db.from("pagos_lote").update({
+          fecha, tipo, recibo, concepto_original:concepto, monto,
+          requiere_revision:$("#pg_rev").checked, nota_revision:$("#pg_nota").value.trim()||null
+        }).eq("id", editId).select("id");
+        if(error || !data?.length){ toast(error?errMsg(error):"No tienes permiso para editar pagos.", true); return; }
+        toast("Pago actualizado");
+      }else{
+        const filas=[];
+        $$("#pg_aplicar [data-monto]").forEach(i=>{
+          const id=i.dataset.monto, m=Number(i.value);
+          if($(`#pg_aplicar [data-chk="${id}"]`).checked && m>0) filas.push({ contrato_id:id, fecha, tipo, recibo, concepto_original:concepto, monto:Math.round(m*100)/100 });
+        });
+        if(!filas.length){ toast("Escribe el monto en al menos un lote", true); return; }
+        if(recibo){
+          const { data:dup } = await db.from("pagos_lote").select("id,contrato_id").eq("recibo", recibo).limit(5);
+          if(dup && dup.length){
+            const ok=await confirmar("Recibo ya registrado", `El recibo ${recibo} ya aparece en ${dup.length} pago(s).`, "¿Es otro pago con el mismo número? Si no, cancela para no duplicarlo.", "Sí, registrar");
+            if(!ok) return;
+          }
+        }
+        const { error } = await db.from("pagos_lote").insert(filas);   // todo o nada
+        if(error){ toast("No se guardó: "+errMsg(error), true); return; }
+        toast(filas.length>1 ? `Pago registrado en ${filas.length} lotes` : "Pago registrado");
+      }
+      cerrar("#pagoModal"); await refrescarCliente();
+    } finally { btn.disabled=false; }
+  });
+
+  function editarPago(pagoId){
+    const p = pagosActuales.find(x=>x.id===pagoId); if(!p) return;
+    const c = clienteActual.contratos.find(x=>x.contrato_id===p.contrato_id);
+    $("#pg_titulo").textContent="Editar pago"; $("#pg_id").value=p.id;
+    $("#pg_fecha").value=p.fecha||""; $("#pg_tipo").value=p.tipo; $("#pg_recibo").value=p.recibo||""; $("#pg_concepto").value=p.concepto_original||"";
+    $("#pg_monto").value=p.monto; $("#pg_lotes").value=(c?c.fraccionamiento+" · "+c.lotes:"");
+    $("#pg_rev").checked=!!p.requiere_revision; $("#pg_nota").value=p.nota_revision||"";
+    $("#pg_aplicarBox").classList.add("hidden"); $("#pg_editBox").classList.remove("hidden");
+    $("#pg_delete").classList.toggle("hidden", !esAdmin);
+    $("#pg_save").textContent="Guardar cambios";
+    abrir("#pagoModal");
+  }
+  $("#pg_delete").addEventListener("click", async ()=>{
+    const id=$("#pg_id").value; const p=pagosActuales.find(x=>x.id===id); if(!p) return;
+    const ok = await confirmar("¿Borrar este pago?", `${money(p.monto,true)} del ${fechaC(p.fecha)}${p.recibo?" · recibo "+p.recibo:""}`, "Queda guardado en el historial de cambios.");
+    if(!ok) return;
+    const { data, error } = await db.from("pagos_lote").delete().eq("id", id).select("id");
+    if(error || !data?.length){ toast(error?errMsg(error):"No tienes permiso para borrar pagos.", true); return; }
+    cerrar("#pagoModal"); toast("Pago borrado"); refrescarCliente();
+  });
+
+  // --- editar contrato ---
+  function abrirContrato(contratoId){
+    const c = clienteActual.contratos.find(x=>x.contrato_id===contratoId); if(!c) return;
+    const cp = clienteActual.comprador;
+    $("#ct_titulo").textContent = `${c.fraccionamiento} · ${c.lotes||""}`;
+    $("#ct_id").value=c.contrato_id; $("#ct_comp").value=cp.id;
+    $("#ct_nombre").value=cp.nombre||""; $("#ct_tel").value=cp.telefono||"";
+    $("#ct_precio").value=c.precio_total??""; $("#ct_eng").value=c.enganche_pactado??""; $("#ct_mens").value=c.mensualidad??"";
+    $("#ct_plazo").value=c.plazo_meses??""; $("#ct_inicio").value=c.fecha_inicio||""; $("#ct_dia").value=c.dia_pago??"";
+    $("#ct_prom").value=c.promotor_id||""; $("#ct_estatus").value=c.estatus||"activo"; $("#ct_entregado").value=String(!!c.entregado);
+    $("#ct_notas").value=c.notas||"";
+    abrir("#ctModal");
+  }
+  $("#ct_cancel").addEventListener("click",()=>cerrar("#ctModal"));
+  $("#ct_save").addEventListener("click", async ()=>{
+    const precio=n2($("#ct_precio").value);
+    if(!(precio>0)){ toast("El precio es obligatorio", true); return; }
+    const estatus=$("#ct_estatus").value;
+    if(estatus==="cancelado"){
+      const ok=await confirmar("¿Cancelar este contrato?", "Los lotes quedarán como DISPONIBLES en el reporte de lotes.", "Los pagos no se borran.", "Sí, cancelar");
+      if(!ok) return;
+    }
+    const btn=$("#ct_save"); btn.disabled=true;
+    try{
+      const r1 = await db.from("contratos_lote").update({
+        precio_total:precio, enganche_pactado:n2($("#ct_eng").value), mensualidad:n2($("#ct_mens").value),
+        plazo_meses:n2($("#ct_plazo").value), fecha_inicio:$("#ct_inicio").value||null, dia_pago:n2($("#ct_dia").value),
+        promotor_id:$("#ct_prom").value||null, estatus, entregado:$("#ct_entregado").value==="true",
+        notas:$("#ct_notas").value.trim()||null
+      }).eq("id", $("#ct_id").value).select("id");
+      if(r1.error || !r1.data?.length){ toast(r1.error?errMsg(r1.error):"No tienes permiso para editar contratos.", true); return; }
+      const r2 = await db.from("compradores").update({ nombre:$("#ct_nombre").value.trim().toUpperCase(), telefono:$("#ct_tel").value.replace(/\D/g,"")||null }).eq("id", $("#ct_comp").value);
+      if(r2.error){ toast("Contrato guardado, pero el comprador no: "+errMsg(r2.error), true); }
+      else toast("Contrato actualizado");
+      cerrar("#ctModal"); refrescarCliente();
+    } finally { btn.disabled=false; }
+  });
+
+  // --- historial ---
+  async function verHistorial(contratoId){
+    const { data, error } = await db.from("pagos_lote_historial").select("*").eq("contrato_id", contratoId).order("created_at",{ascending:false}).limit(100);
+    if(error){ toast(errMsg(error), true); return; }
+    const nombres = {}; // id usuario → nombre (perfiles)
+    const ids=[...new Set((data||[]).map(h=>h.usuario).filter(Boolean))];
+    if(ids.length){ const { data:pf } = await db.from("perfiles").select("id,nombre").in("id", ids); (pf||[]).forEach(x=>nombres[x.id]=x.nombre); }
+    const desc = h => {
+      const a=h.datos_anteriores||{}, n=h.datos_nuevos||{};
+      if(h.accion==="borrado") return `Borró ${money(a.monto,true)} del ${fechaC(a.fecha)}${a.recibo?" (recibo "+esc(a.recibo)+")":""}`;
+      const cambios=[];
+      [["monto","Monto",v=>money(v,true)],["fecha","Fecha",fechaC],["tipo","Tipo",v=>TIPOS[v]?.[0]||v],["recibo","Recibo",v=>v||"—"],["concepto_original","Concepto",v=>v||"—"],["requiere_revision","Por revisar",v=>v?"sí":"no"]]
+        .forEach(([k,l,f])=>{ if(String(a[k])!==String(n[k])) cambios.push(`${l}: ${esc(f(a[k]))} → ${esc(f(n[k]))}`); });
+      return cambios.length ? cambios.join("<br>") : "Sin cambios visibles";
+    };
+    $("#histTabla").innerHTML = `<thead><tr><th>Cuándo</th><th>Quién</th><th>Qué cambió</th></tr></thead><tbody>${
+      (data&&data.length) ? data.map(h=>`<tr><td style="white-space:nowrap">${new Date(h.created_at).toLocaleString("es-MX",{dateStyle:"short",timeStyle:"short"})}</td>
+        <td>${esc(nombres[h.usuario]||"—")}</td><td style="font-size:13.5px">${desc(h)}</td></tr>`).join("")
+      : '<tr><td colspan="3" class="empty">Sin cambios registrados. Los pagos nuevos y las importaciones no aparecen aquí; solo ediciones y borrados.</td></tr>'}</tbody>`;
+    abrir("#histModal");
+  }
+  $("#hist_close").addEventListener("click",()=>cerrar("#histModal"));
+
+  // --- nueva venta ---
+  let lotesVenta=[];
+  $("#btnNuevaVenta").addEventListener("click", async ()=>{
+    ["vt_nombre","vt_comp","vt_tel","vt_precio","vt_eng","vt_mens","vt_plazo","vt_inicio","vt_dia","vt_notas","vt_lotFiltro"].forEach(i=>$("#"+i).value="");
+    $("#vt_prom").value=""; $("#vt_compSel").classList.add("hidden"); $("#vt_sug").classList.add("hidden");
+    abrir("#ventaModal"); await cargarLotesVenta(); setTimeout(()=>$("#vt_nombre").focus(),40);
+  });
+  $("#vt_cancel").addEventListener("click",()=>cerrar("#ventaModal"));
+  $("#vt_fracc").addEventListener("change", cargarLotesVenta);
+  $("#vt_lotFiltro").addEventListener("input", renderLotesVenta);
+  async function cargarLotesVenta(){
+    $("#vt_lotes").innerHTML='<div class="muted" style="padding:8px">Cargando…</div>';
+    const { data, error } = await db.from("v_lotes_estado").select("lote_id,clave,manzana,numero_orden,m2,precio_lista").eq("fraccionamiento_id",$("#vt_fracc").value).eq("estado","disponible");
+    if(error){ $("#vt_lotes").innerHTML=`<div class="muted" style="padding:8px">${esc(errMsg(error))}</div>`; return; }
+    lotesVenta=(data||[]).sort(ordenLote); renderLotesVenta();
+  }
+  function renderLotesVenta(){
+    const f=quitaAcentos($("#vt_lotFiltro").value).replace(/manzana\s*/,"");
+    const marcados=new Set($$("#vt_lotes input:checked").map(i=>i.value));
+    const lista=lotesVenta.filter(l=>!f || quitaAcentos(l.clave).startsWith(f) || marcados.has(l.lote_id));
+    $("#vt_lotesInfo").textContent = `— ${lotesVenta.length} disponibles`;
+    $("#vt_lotes").innerHTML = lista.length ? lista.map(l=>`<label><input type="checkbox" value="${l.lote_id}" data-precio="${l.precio_lista??""}" ${marcados.has(l.lote_id)?"checked":""}/>
+        <b>${esc(l.clave)}</b> <span class="muted">${l.m2?l.m2+" m²":""}${l.precio_lista?" · "+money(l.precio_lista):""}</span></label>`).join("")
+      : `<div class="muted" style="padding:10px">${lotesVenta.length?"Ningún lote coincide.":"No hay lotes disponibles registrados en este fraccionamiento. Agrégalos en la pestaña Lotes."}</div>`;
+    $$("#vt_lotes input").forEach(i=>i.addEventListener("change",()=>{
+      const sel=$$("#vt_lotes input:checked"); const suma=sel.reduce((s,x)=>s+(Number(x.dataset.precio)||0),0);
+      if(suma>0 && sel.every(x=>x.dataset.precio)) $("#vt_precio").value=suma;
+    }));
+  }
+  let vtTimer=null;
+  $("#vt_nombre").addEventListener("input", ()=>{
+    $("#vt_comp").value=""; $("#vt_compSel").classList.add("hidden");
+    clearTimeout(vtTimer); const t=$("#vt_nombre").value.trim();
+    if(t.length<3){ $("#vt_sug").classList.add("hidden"); return; }
+    vtTimer=setTimeout(async ()=>{
+      const { data } = await db.rpc("buscar_compradores",{p_texto:t,p_limite:5});
+      if(!data || !data.length){ $("#vt_sug").classList.add("hidden"); return; }
+      $("#vt_sug").innerHTML = data.map(c=>`<button type="button" data-id="${c.comprador_id}" data-nom="${esc(c.comprador)}" data-tel="${esc(c.telefono||"")}">${esc(c.comprador)} <span class="muted" style="font-size:12.5px">· ${esc(c.lotes)}</span></button>`).join("")
+        + `<button type="button" data-nuevo="1" class="muted">➕ Es un cliente nuevo: “${esc(t.toUpperCase())}”</button>`;
+      $("#vt_sug").classList.remove("hidden");
+      $$("#vt_sug button").forEach(b=>b.addEventListener("click",()=>{
+        if(!b.dataset.nuevo){
+          $("#vt_comp").value=b.dataset.id; $("#vt_nombre").value=b.dataset.nom; $("#vt_tel").value=b.dataset.tel;
+          $("#vt_compSel").textContent="✓ Cliente existente: la venta se agrega a su cuenta."; $("#vt_compSel").classList.remove("hidden");
+        }
+        $("#vt_sug").classList.add("hidden");
+      }));
+    }, 250);
+  });
+  $("#vt_save").addEventListener("click", async ()=>{
+    const lotes=$$("#vt_lotes input:checked").map(i=>i.value);
+    const nombre=$("#vt_nombre").value.trim(), precio=n2($("#vt_precio").value);
+    if(!nombre){ toast("Falta el comprador", true); return; }
+    if(!lotes.length){ toast("Elige al menos un lote", true); return; }
+    if(!(precio>0)){ toast("Falta el precio total", true); return; }
+    const btn=$("#vt_save"); btn.disabled=true;
+    const { data, error } = await db.rpc("crear_venta", {
+      p_fraccionamiento_id:$("#vt_fracc").value, p_lote_ids:lotes, p_precio_total:precio,
+      p_comprador_id:$("#vt_comp").value||null, p_comprador_nombre:nombre, p_telefono:$("#vt_tel").value||null,
+      p_promotor_id:$("#vt_prom").value||null, p_enganche_pactado:n2($("#vt_eng").value), p_mensualidad:n2($("#vt_mens").value),
+      p_plazo_meses:n2($("#vt_plazo").value), p_fecha_inicio:$("#vt_inicio").value||null, p_dia_pago:n2($("#vt_dia").value),
+      p_notas:$("#vt_notas").value||null
+    });
+    btn.disabled=false;
+    if(error){ toast("No se creó: "+errMsg(error), true); return; }
+    cerrar("#ventaModal"); toast("Venta creada");
+    await cargarCuentas();
+    const nueva = cuentas.find(c=>c.contrato_id===data);
+    if(nueva) abrirCliente(nueva.comprador_id, true);
+  });
+
+  // =====================================================================
+  // INGRESOS
+  // =====================================================================
+  let ingDatos=[];
+  function initIngresos(){
+    const hoy=new Date(); const hasta=hoy.toISOString().slice(0,7);
+    const d=new Date(hoy.getFullYear(), hoy.getMonth()-11, 1);
+    $("#ingDesde").value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+    $("#ingHasta").value = hasta;
+    ["#ingFracc","#ingDesde","#ingHasta"].forEach(s=>$(s).addEventListener("change", cargarIngresos));
+  }
+  const finMes = ym => { const [y,m]=ym.split("-").map(Number); return new Date(Date.UTC(y,m,0)).toISOString().slice(0,10); };
+
+  async function cargarIngresos(){
+    const desde=$("#ingDesde").value, hasta=$("#ingHasta").value;
+    if(!desde || !hasta || desde>hasta){ toast("Revisa el rango de meses", true); return; }
+    const fid=$("#ingFracc").value||null;
+    $("#ingTabla").innerHTML='<tbody><tr><td class="empty">Cargando…</td></tr></tbody>';
+    const { data, error } = await db.rpc("reporte_ingresos_mensuales", { p_fraccionamiento_id:fid, p_desde:desde+"-01", p_hasta:finMes(hasta) });
+    if(error){ $("#ingTabla").innerHTML=`<tbody><tr><td class="empty">${esc(errMsg(error))}</td></tr></tbody>`; return; }
+    ingDatos=(data||[]).map(r=>({...r, enganche:+r.enganche, mensualidad:+r.mensualidad, liquidacion:+r.liquidacion, sin_concepto:+r.sin_concepto, total:+r.total}));
+
+    // Aviso de pagos sin fecha (no entran al reporte)
+    let q = db.from("pagos_lote").select("id, contratos_lote!inner(fraccionamiento_id)", {count:"exact", head:true}).is("fecha", null);
+    if(fid) q = q.eq("contratos_lote.fraccionamiento_id", fid);
+    const { count } = await q;
+    $("#ingAviso").innerHTML = count ? `<div class="aviso"><b>${count} pago(s) sin fecha</b> no aparecen en este reporte. Se corrigen en la pestaña ⚠️ Revisión.</div>` : "";
+
+    renderIngresos(fid);
+    if(!fid) renderDesglose(desde, hasta); else $("#ingDesglose").innerHTML="";
+  }
+
+  function renderIngresos(fid){
+    const tot = ingDatos.reduce((s,r)=>({eng:s.eng+r.enganche, mens:s.mens+r.mensualidad, liq:s.liq+r.liquidacion, otro:s.otro+r.sin_concepto, total:s.total+r.total, n:s.n+r.num_pagos}), {eng:0,mens:0,liq:0,otro:0,total:0,n:0});
+    const meses = ingDatos.length || 1;
+    $("#ingKpis").innerHTML = `
+      <div class="kpi"><div class="lbl">Total del periodo</div><div class="val">${money(tot.total)}</div><div class="sub">${tot.n} pagos · promedio ${moneyC(tot.total/meses)}/mes</div></div>
+      <div class="kpi"><div class="lbl"><i class="dot" style="background:var(--s-mens)"></i>Mensualidades</div><div class="val">${money(tot.mens)}</div><div class="sub">${tot.total?Math.round(tot.mens/tot.total*100):0}% del total</div></div>
+      <div class="kpi"><div class="lbl"><i class="dot" style="background:var(--s-eng)"></i>Enganches</div><div class="val">${money(tot.eng)}</div><div class="sub">${tot.total?Math.round(tot.eng/tot.total*100):0}% del total</div></div>
+      <div class="kpi"><div class="lbl"><i class="dot" style="background:var(--s-liq)"></i>Liquidaciones</div><div class="val">${money(tot.liq)}</div><div class="sub">pagos de contado / finiquitos</div></div>`;
+    $("#legOtro").classList.toggle("hidden", tot.otro===0);
+
+    // ---- gráfica de barras apiladas (mensualidad abajo, luego enganche, liquidación, sin concepto) ----
+    const max = Math.max(1, ...ingDatos.map(r=>r.total));
+    const paso = (()=>{ const bruto=max/4, p=Math.pow(10,Math.floor(Math.log10(bruto))); const n=bruto/p; return (n<=1?1:n<=2?2:n<=5?5:10)*p; })();
+    const tope = Math.ceil(max/paso)*paso;
+    const pct = v => (v/tope*100).toFixed(3)+"%";
+    let html="";
+    for(let v=0; v<=tope+1e-6; v+=paso){ html+=`<div class="grid" style="bottom:calc(22px + (100% - 22px) * ${v/tope})"><span>${moneyC(v)}</span></div>`; }
+    html += ingDatos.map((r,i)=>{
+      const segs=[["mensualidad","--s-mens"],["enganche","--s-eng"],["liquidacion","--s-liq"],["sin_concepto","--s-otro"]].filter(([k])=>r[k]>0);
+      return `<div class="col" data-i="${i}">${segs.map(([k,c],j)=>`<div class="seg" style="height:${pct(r[k])};background:var(${c});${j===segs.length-1?"border-radius:4px 4px 0 0;":""}"></div>`).join("")}<span class="mes">${mesC(r.mes)}</span></div>`;
+    }).join("");
+    const plot=$("#ingPlot"); plot.innerHTML=html;
+
+    const tip=$("#tip");
+    plot.querySelectorAll(".col").forEach(c=>{
+      const r=ingDatos[+c.dataset.i];
+      const mostrar=e=>{
+        tip.innerHTML=`<div style="font-weight:700;margin-bottom:6px">${mesC(r.mes)} · ${money(r.total)}</div>
+          <div class="r"><span><i class="dot" style="background:var(--s-mens)"></i>Mensualidades</span><b>${money(r.mensualidad)}</b></div>
+          <div class="r"><span><i class="dot" style="background:var(--s-eng)"></i>Enganches</span><b>${money(r.enganche)}</b></div>
+          ${r.liquidacion?`<div class="r"><span><i class="dot" style="background:var(--s-liq)"></i>Liquidaciones</span><b>${money(r.liquidacion)}</b></div>`:""}
+          ${r.sin_concepto?`<div class="r"><span><i class="dot" style="background:var(--s-otro)"></i>Sin concepto</span><b>${money(r.sin_concepto)}</b></div>`:""}
+          <div class="r muted" style="margin-top:4px;font-size:12px"><span>${r.num_pagos} pagos</span></div>`;
+        tip.classList.remove("hidden");
+        const x=Math.min(window.innerWidth-tip.offsetWidth-8, (e.touches?e.touches[0].clientX:e.clientX)+14);
+        const y=Math.max(8, (e.touches?e.touches[0].clientY:e.clientY)-tip.offsetHeight-12);
+        tip.style.left=x+"px"; tip.style.top=y+"px";
+      };
+      c.addEventListener("mousemove", mostrar); c.addEventListener("touchstart", mostrar, {passive:true});
+      c.addEventListener("mouseleave", ()=>tip.classList.add("hidden"));
+    });
+    document.addEventListener("touchstart", e=>{ if(!e.target.closest(".col")) tip.classList.add("hidden"); }, {passive:true});
+
+    // ---- tabla ----
+    const hayOtro = tot.otro>0;
+    $("#ingTabla").innerHTML = `<thead><tr><th>Mes</th><th class="num">Mensualidades</th><th class="num">Enganches</th><th class="num">Liquidaciones</th>${hayOtro?'<th class="num">Sin concepto</th>':""}<th class="num">Total</th><th class="num">Pagos</th></tr></thead>
+      <tbody>${ingDatos.slice().reverse().map(r=>`<tr><td>${mesC(r.mes)}</td><td class="num">${money(r.mensualidad)}</td><td class="num">${money(r.enganche)}</td><td class="num">${money(r.liquidacion)}</td>${hayOtro?`<td class="num">${money(r.sin_concepto)}</td>`:""}<td class="num"><b>${money(r.total)}</b></td><td class="num">${r.num_pagos}</td></tr>`).join("")}</tbody>
+      <tfoot><tr><td>Total</td><td class="num">${money(tot.mens)}</td><td class="num">${money(tot.eng)}</td><td class="num">${money(tot.liq)}</td>${hayOtro?`<td class="num">${money(tot.otro)}</td>`:""}<td class="num">${money(tot.total)}</td><td class="num">${tot.n}</td></tr></tfoot>`;
+  }
+
+  async function renderDesglose(desde, hasta){
+    const filas = await Promise.all(fraccs.map(async f=>{
+      const { data } = await db.rpc("reporte_ingresos_mensuales", { p_fraccionamiento_id:f.id, p_desde:desde+"-01", p_hasta:finMes(hasta) });
+      const t=(data||[]).reduce((s,r)=>({eng:s.eng+ +r.enganche, mens:s.mens+ +r.mensualidad, liq:s.liq+ +r.liquidacion, otro:s.otro+ +r.sin_concepto, total:s.total+ +r.total, n:s.n+r.num_pagos}),{eng:0,mens:0,liq:0,otro:0,total:0,n:0});
+      return { nombre:f.nombre, ...t };
+    }));
+    if($("#ingFracc").value) return;   // el usuario cambió de filtro mientras cargaba
+    const T = filas.reduce((s,r)=>({eng:s.eng+r.eng,mens:s.mens+r.mens,liq:s.liq+r.liq,otro:s.otro+r.otro,total:s.total+r.total,n:s.n+r.n}),{eng:0,mens:0,liq:0,otro:0,total:0,n:0});
+    $("#ingDesglose").innerHTML = `<h3 style="margin:0 0 10px;font-size:16px">Por fraccionamiento <span class="muted" style="font-weight:400;font-size:14px">(${mesC(desde)} – ${mesC(hasta)})</span></h3>
+      <div class="tablewrap"><table class="ingresos-tabla"><thead><tr><th>Fraccionamiento</th><th class="num">Mensualidades</th><th class="num">Enganches</th><th class="num">Liquidaciones</th><th class="num">Total</th><th class="num">Pagos</th></tr></thead>
+      <tbody>${filas.map(r=>`<tr><td>${esc(r.nombre)}</td><td class="num">${money(r.mens)}</td><td class="num">${money(r.eng)}</td><td class="num">${money(r.liq)}</td><td class="num"><b>${money(r.total)}</b></td><td class="num">${r.n}</td></tr>`).join("")}</tbody>
+      <tfoot><tr><td>General</td><td class="num">${money(T.mens)}</td><td class="num">${money(T.eng)}</td><td class="num">${money(T.liq)}</td><td class="num">${money(T.total)}</td><td class="num">${T.n}</td></tr></tfoot></table></div>`;
+  }
+
+  $("#ingCsv").addEventListener("click", ()=>{
+    if(!ingDatos.length) return;
+    const nombre = $("#ingFracc").selectedOptions[0].textContent.replace(/\s*\(.*\)/,"");
+    csv(`ingresos_${nombre.replace(/\s+/g,"_").toLowerCase()}_${$("#ingDesde").value}_${$("#ingHasta").value}.csv`,
+      [["Mes","Fraccionamiento","Mensualidades","Enganches","Liquidaciones","Sin concepto","Total","Pagos"],
+       ...ingDatos.map(r=>[r.mes.slice(0,7), nombre, r.mensualidad, r.enganche, r.liquidacion, r.sin_concepto, r.total, r.num_pagos])]);
+  });
+
+  // =====================================================================
+  // LOTES
+  // =====================================================================
+  let lotesDatos=[];
+  ["#lotEstado","#lotManzana"].forEach(s=>$(s).addEventListener("change", renderLotes));
+  $("#lotFracc").addEventListener("change", ()=>{ $("#lotManzana").value=""; cargarLotes(); });
+
+  async function cargarLotes(){
+    $("#lotManzanas").innerHTML='<div class="empty">Cargando…</div>';
+    const fid=$("#lotFracc").value;
+    let todo=[], desde=0;
+    for(;;){
+      const { data, error } = await db.from("v_lotes_estado").select("*").eq("fraccionamiento_id", fid).range(desde, desde+999);
+      if(error){ $("#lotManzanas").innerHTML=`<div class="empty">${esc(errMsg(error))}</div>`; return; }
+      todo=todo.concat(data||[]); if(!data || data.length<1000) break; desde+=1000;
+    }
+    lotesDatos = todo.sort(ordenLote);
+    const manzanas=[...new Set(lotesDatos.map(l=>l.manzana))].sort();
+    $("#lotManzana").innerHTML = `<option value="">Todas</option>`+manzanas.map(m=>`<option>${esc(m)}</option>`).join("");
+    renderLotes();
+  }
+
+  function renderLotes(){
+    const f = fraccs.find(x=>x.id===$("#lotFracc").value) || {};
+    const filtroEstado=$("#lotEstado").value, filtroManzana=$("#lotManzana").value;
+    const grupo = l => l.estado==="disponible" ? "disponible" : l.estado==="vendido" ? "vendido" : "otro";
+    const disp=lotesDatos.filter(l=>l.estado==="disponible"), vend=lotesDatos.filter(l=>l.estado==="vendido"), otros=lotesDatos.filter(l=>grupo(l)==="otro");
+
+    // Huecos: números que faltan entre 1 y el lote más alto de cada manzana
+    const porManzana = {};
+    lotesDatos.forEach(l=>{ (porManzana[l.manzana] ||= []).push(l); });
+    let huecosTotal=0;
+    const huecos = {};
+    Object.entries(porManzana).forEach(([m,ls])=>{
+      const nums=new Set(ls.map(l=>l.numero_orden).filter(n=>n!=null));
+      const max=Math.max(0,...nums); const h=[];
+      if(/^[A-Z]$/i.test(m)) for(let i=1;i<=max;i++) if(!nums.has(i)) h.push(i);
+      huecos[m]=h; huecosTotal+=h.length;
+    });
+
+    $("#lotAviso").innerHTML = f.catalogo_completo ? "" : `<div class="aviso"><b>⚠️ Catálogo incompleto.</b> En ${esc(f.nombre||"este fraccionamiento")} solo están registrados los lotes que venían en los Excel de cobranza, así que la lista de disponibles puede estar incompleta.
+      ${huecosTotal?` Hay <b>${huecosTotal} números de lote que no aparecen</b> (recuadros punteados): pueden estar libres o no existir.`:""}
+      Con el plano del fraccionamiento se cargan todos los lotes${esAdmin?' con “+ Agregar lotes al catálogo”':""} y este aviso desaparece.</div>`;
+
+    const precioDisp = disp.reduce((s,l)=>s+(+l.precio_lista||0),0);
+    $("#lotKpis").innerHTML = `
+      <div class="kpi"><div class="lbl">🟢 Disponibles</div><div class="val">${disp.length}${f.catalogo_completo?"":"<span class='muted' style='font-size:14px;font-weight:500'> registrados</span>"}</div><div class="sub">${precioDisp?money(precioDisp)+" a precio de lista":"sin precio de lista capturado"}</div></div>
+      <div class="kpi"><div class="lbl">Vendidos</div><div class="val">${vend.length}</div><div class="sub">con contrato vigente</div></div>
+      <div class="kpi"><div class="lbl">Propietario / pendiente</div><div class="val">${otros.length}</div><div class="sub">no se venden o sin precio</div></div>
+      ${f.catalogo_completo?"":`<div class="kpi"><div class="lbl">No registrados</div><div class="val">${huecosTotal}</div><div class="sub">números faltantes por confirmar</div></div>`}`;
+
+    const manzanas = Object.keys(porManzana).sort().filter(m=>!filtroManzana || m===filtroManzana);
+    let html="";
+    manzanas.forEach(m=>{
+      let ls = porManzana[m];
+      if(filtroEstado) ls = ls.filter(l=>grupo(l)===filtroEstado);
+      const mostrarHuecos = !filtroEstado || filtroEstado==="disponible";
+      const hs = mostrarHuecos && !f.catalogo_completo ? huecos[m] : [];
+      if(!ls.length && !hs.length) return;
+      const items = [...ls.map(l=>({n:l.numero_orden??1e9, l})), ...hs.map(n=>({n, hueco:true}))].sort((a,b)=>a.n-b.n);
+      const d=porManzana[m].filter(l=>l.estado==="disponible").length;
+      html += `<div class="manzana"><h4>Manzana ${esc(m)} <span class="pill ${d?"ok":""}">${d} disponible${d===1?"":"s"}</span><span class="muted" style="font-weight:400;font-size:13px">${porManzana[m].length} registrados${huecos[m].length&&!f.catalogo_completo?` · ${huecos[m].length} sin registrar`:""}</span></h4>
+        <div class="lotes-grid">${items.map(it=> it.hueco
+          ? `<span class="lt hueco" title="${esc(m)}-${it.n}: no está registrado">${it.n}</span>`
+          : `<button class="lt ${grupo(it.l)}" data-lote="${it.l.lote_id}" title="${esc(tituloLote(it.l))}">${esc(it.l.numero)}</button>`).join("")}</div></div>`;
+    });
+    $("#lotManzanas").innerHTML = html || '<div class="empty">No hay lotes con ese filtro.</div>';
+    $$("#lotManzanas [data-lote]").forEach(b=>b.addEventListener("click",()=>{
+      const l=lotesDatos.find(x=>x.lote_id===b.dataset.lote); if(!l) return;
+      if(l.contrato_id){ const c=cuentas.find(x=>x.contrato_id===l.contrato_id); if(c) return abrirCliente(c.comprador_id, true); }
+      toast(tituloLote(l));
+    }));
+  }
+  function tituloLote(l){
+    const partes=[l.clave];
+    if(l.estado==="vendido") partes.push("Vendido a "+(l.comprador||"—"));
+    else if(l.estado==="disponible") partes.push("Disponible");
+    else partes.push(l.estado==="propietario"?"Del propietario":l.estado==="pendiente"?"Pendiente":"Apartado");
+    if(l.m2) partes.push(l.m2+" m²");
+    if(l.precio_lista) partes.push("Lista "+money(l.precio_lista));
+    return partes.join(" · ");
+  }
+  $("#lotCsv").addEventListener("click", ()=>{
+    const f=fraccs.find(x=>x.id===$("#lotFracc").value)||{};
+    const disp=lotesDatos.filter(l=>l.estado==="disponible");
+    csv(`lotes_disponibles_${(f.nombre||"").replace(/\s+/g,"_").toLowerCase()}.csv`,
+      [["Fraccionamiento","Lote","Manzana","Número","m²","Frente","Fondo","Precio de lista","Notas"],
+       ...disp.map(l=>[f.nombre,l.clave,l.manzana,l.numero,l.m2,l.medida_frente,l.medida_fondo,l.precio_lista,l.notas])]);
+  });
+
+  $("#btnAgregarLotes").addEventListener("click", ()=>{
+    $("#al_fracc").value=$("#lotFracc").value; ["al_manzana","al_desde","al_hasta","al_m2","al_precio"].forEach(i=>$("#"+i).value="");
+    $("#al_completo").checked=!!(fraccs.find(x=>x.id===$("#lotFracc").value)||{}).catalogo_completo;
+    abrir("#altaLotesModal");
+  });
+  $("#al_cancel").addEventListener("click",()=>cerrar("#altaLotesModal"));
+  $("#al_save").addEventListener("click", async ()=>{
+    const fid=$("#al_fracc").value, m=$("#al_manzana").value.trim().toUpperCase();
+    const d=n2($("#al_desde").value), h=n2($("#al_hasta").value);
+    const completo=$("#al_completo").checked;
+    const f=fraccs.find(x=>x.id===fid);
+    if(m && d && h){
+      if(h<d){ toast("El rango está al revés", true); return; }
+      const { data, error } = await db.rpc("agregar_lotes", { p_fraccionamiento_id:fid, p_manzana:m, p_desde:d, p_hasta:h, p_m2:n2($("#al_m2").value), p_precio_lista:n2($("#al_precio").value) });
+      if(error){ toast("No se agregaron: "+errMsg(error), true); return; }
+      toast(`${data} lote(s) nuevos en manzana ${m}` + (data < h-d+1 ? ` (${h-d+1-data} ya existían)` : ""));
+    } else if(!f || completo===!!f.catalogo_completo){ toast("Llena manzana y rango", true); return; }
+    if(f && completo!==!!f.catalogo_completo){
+      const { error } = await db.from("fraccionamientos").update({ catalogo_completo:completo }).eq("id", fid);
+      if(error){ toast(errMsg(error), true); return; }
+      f.catalogo_completo=completo;
+    }
+    cerrar("#altaLotesModal"); $("#lotFracc").value=fid; cargarLotes();
+  });
+
+  // =====================================================================
+  // REVISIÓN
+  // =====================================================================
+  ["#revFracc","#revVer"].forEach(s=>$(s).addEventListener("change", cargarRevision));
+  async function cargarRevisionContador(){
+    const { count } = await db.from("pagos_lote").select("id",{count:"exact",head:true}).eq("requiere_revision", true);
+    const b=$("#revCount"); b.textContent=count||""; b.classList.toggle("hidden", !count);
+  }
+  async function cargarRevision(){
+    const fid=$("#revFracc").value, fnom=(fraccs.find(x=>x.id===fid)||{}).nombre;
+    const porContrato = Object.fromEntries(cuentas.map(c=>[c.contrato_id,c]));
+    // Pagos por revisar
+    const { data:pg, error:e1 } = await db.from("pagos_lote").select("*").eq("requiere_revision", true).order("hoja_origen").order("fila_origen").limit(500);
+    const pagos = (pg||[]).filter(p=>!fid || porContrato[p.contrato_id]?.fraccionamiento_id===fid);
+    $("#revPagosCount").textContent = `(${pagos.length})`;
+    $("#revPagos").innerHTML = e1 ? `<tbody><tr><td class="empty">${esc(errMsg(e1))}</td></tr></tbody>` :
+      `<thead><tr><th>Cliente</th><th>Lote</th><th>Fecha</th><th class="num">Monto</th><th>Motivo</th><th>Hoja Excel</th></tr></thead><tbody>${
+        pagos.length ? pagos.map(p=>{ const c=porContrato[p.contrato_id]||{}; return `<tr>
+          <td><button class="link" data-c="${c.comprador_id||""}">${esc(c.comprador||"—")}</button></td>
+          <td style="white-space:nowrap">${esc(c.fraccionamiento||"")} ${esc(c.lotes||"")}</td>
+          <td style="white-space:nowrap">${fechaC(p.fecha)}</td><td class="num">${money(p.monto,true)}</td>
+          <td style="font-size:13px">${esc(p.nota_revision||"")}</td>
+          <td class="muted" style="font-size:12.5px;white-space:nowrap">${esc(p.hoja_origen||"")}${p.fila_origen?" · fila "+p.fila_origen:""}</td></tr>`; }).join("")
+        : '<tr><td colspan="6" class="empty">Sin pagos por revisar 🎉</td></tr>'}</tbody>`;
+    $$("#revPagos [data-c]").forEach(b=>b.addEventListener("click",()=>b.dataset.c && abrirCliente(b.dataset.c, true)));
+
+    // Incidencias
+    let q = db.from("importacion_incidencias").select("*").eq("severidad","revisar").order("fraccionamiento").order("tipo").order("hoja").limit(1000);
+    if($("#revVer").value==="pendientes") q=q.eq("resuelta", false);
+    if(fnom) q=q.eq("fraccionamiento", fnom);
+    const { data:inc, error:e2 } = await q;
+    $("#revIncCount").textContent = `(${(inc||[]).length})`;
+    $("#revInc").innerHTML = e2 ? `<tbody><tr><td class="empty">${esc(errMsg(e2))}</td></tr></tbody>` :
+      `<thead><tr><th>Fracc.</th><th>Tipo</th><th>Hoja</th><th>Detalle</th><th></th></tr></thead><tbody>${
+        (inc&&inc.length) ? inc.map(i=>`<tr style="${i.resuelta?"opacity:.5":""}">
+          <td style="white-space:nowrap">${esc(i.fraccionamiento||"")}</td>
+          <td style="font-size:12.5px">${esc((i.tipo||"").replace(/_/g," "))}</td>
+          <td class="muted" style="font-size:12.5px">${esc(i.hoja||i.lote||"")}</td>
+          <td style="font-size:13.5px">${esc(i.detalle)}</td>
+          <td>${i.resuelta?'<span class="pill ok">Resuelta</span>':`<button class="ghost small" data-res="${i.id}">Marcar resuelta</button>`}</td></tr>`).join("")
+        : '<tr><td colspan="5" class="empty">Sin incidencias pendientes 🎉</td></tr>'}</tbody>`;
+    $$("#revInc [data-res]").forEach(b=>b.addEventListener("click", async ()=>{
+      b.disabled=true;
+      const { error } = await db.from("importacion_incidencias").update({ resuelta:true }).eq("id", b.dataset.res);
+      if(error){ toast(errMsg(error), true); b.disabled=false; return; }
+      toast("Marcada como resuelta"); cargarRevision();
+    }));
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
