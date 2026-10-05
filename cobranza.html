@@ -405,11 +405,11 @@
           <option value="todas">Todas</option>
         </select>
       </div>
-      <div class="aviso info">Aquí están las dudas que salieron al pasar los Excel al sistema. Cuando el cliente aclare una, márcala como resuelta. Para corregir un pago, abre al cliente y usa “Editar” en ese pago.</div>
+      <div class="aviso info">Pagos y datos marcados para confirmar. Cuando aclares uno, márcalo como resuelto. Para corregir un pago, abre la cuenta del comprador y usa “Editar” en ese pago.</div>
       <h3 style="margin:18px 0 10px;font-size:16px">Pagos por revisar <span id="revPagosCount" class="muted"></span></h3>
       <p class="solo-movil">👉 Desliza la tabla a los lados.</p>
       <div class="tablewrap"><table id="revPagos" style="min-width:680px"></table></div>
-      <h3 style="margin:22px 0 10px;font-size:16px">Incidencias de la importación <span id="revIncCount" class="muted"></span></h3>
+      <h3 style="margin:22px 0 10px;font-size:16px">Datos por confirmar <span id="revIncCount" class="muted"></span></h3>
       <div class="tablewrap"><table id="revInc" style="min-width:680px"></table></div>
     </section>
   </main>
@@ -678,7 +678,7 @@
   }
   function errMsg(error){
     const m = (error && (error.message||error.details)) || "Error desconocido";
-    if(/row-level security|permission denied/i.test(m)) return "Tu usuario no tiene permiso para esto. Revisa que tenga perfil en la tabla perfiles.";
+    if(/row-level security|permission denied/i.test(m)) return "Tu usuario no tiene permiso para esto. Pide al administrador que revise tus permisos.";
     return m;
   }
 
@@ -717,7 +717,7 @@
       db.from("fraccionamientos").select("id,nombre,catalogo_completo").order("nombre"),
       db.from("promotores").select("id,nombre,activo").order("nombre")
     ]);
-    if(f.error){ toast("Error: "+errMsg(f.error)+" — ¿ya corriste el SQL del paso 16?", true); return; }
+    if(f.error){ toast("Error: "+errMsg(f.error)+". Intenta de nuevo en unos minutos.", true); return; }
     fraccs = f.data||[]; promotores = p.data||[];
     llenarSelects();
     await cargarCuentas();
@@ -806,7 +806,7 @@
         <div class="kpi"><div class="lbl">⚠️ Atrasados</div><div class="val">${g.sinReglas===g.n-g.liquidados && g.atrasados===0 ? "—" : g.atrasados}</div><div class="sub">${g.atrasados? money(g.adeudo)+" de adeudo" : (g.sinReglas? g.sinReglas+" sin reglas de cobro" : "al corriente")}</div></div>
       </div>`;
     });
-    if(sinReglas) html = `<div class="aviso" style="margin-top:22px"><b>El adeudo aún no se calcula en ${sinReglas} contratos.</b> Falta capturar la mensualidad y la fecha de la 1ª mensualidad (lo estamos confirmando con el cliente). Cuando un contrato las tenga, su adeudo aparece solo.</div>` + html;
+    if(sinReglas) html = `<div class="aviso" style="margin-top:22px"><b>El adeudo aún no se calcula en ${sinReglas} contratos.</b> Falta capturar la mensualidad y la fecha de la 1ª mensualidad en “Editar contrato”. Cuando un contrato las tenga, su adeudo aparece solo.</div>` + html;
     $("#resumen").innerHTML = html;
   }
 
@@ -1136,7 +1136,7 @@
     $("#histTabla").innerHTML = `<thead><tr><th>Cuándo</th><th>Quién</th><th>Qué cambió</th></tr></thead><tbody>${
       (data&&data.length) ? data.map(h=>`<tr><td style="white-space:nowrap">${new Date(h.created_at).toLocaleString("es-MX",{dateStyle:"short",timeStyle:"short"})}</td>
         <td>${esc(nombres[h.usuario]||"—")}</td><td style="font-size:13.5px">${desc(h)}</td></tr>`).join("")
-      : '<tr><td colspan="3" class="empty">Sin cambios registrados. Los pagos nuevos y las importaciones no aparecen aquí; solo ediciones y borrados.</td></tr>'}</tbody>`;
+      : '<tr><td colspan="3" class="empty">Sin cambios registrados. Aquí solo aparecen las ediciones y los borrados de pagos.</td></tr>'}</tbody>`;
     abrir("#histModal");
   }
   $("#hist_close").addEventListener("click",()=>cerrar("#histModal"));
@@ -1670,7 +1670,7 @@
       huecos[m]=h; huecosTotal+=h.length;
     });
 
-    $("#lotAviso").innerHTML = f.catalogo_completo ? "" : `<div class="aviso"><b>⚠️ Catálogo incompleto.</b> En ${esc(f.nombre||"este fraccionamiento")} solo están registrados los lotes que venían en los Excel de cobranza, así que la lista de disponibles puede estar incompleta.
+    $("#lotAviso").innerHTML = f.catalogo_completo ? "" : `<div class="aviso"><b>⚠️ Catálogo incompleto.</b> En ${esc(f.nombre||"este fraccionamiento")} solo están registrados los lotes de los controles de cobranza, así que la lista de disponibles puede estar incompleta.
       ${huecosTotal?` Hay <b>${huecosTotal} números de lote que no aparecen</b> (recuadros punteados): pueden estar libres o no existir.`:""}
       Con el plano del fraccionamiento se cargan todos los lotes${esAdmin?' con “+ Agregar lotes al catálogo”':""} y este aviso desaparece.</div>`;
 
@@ -1921,7 +1921,7 @@
       const { data, error } = await db.from("v_cobranza_alertas").select("*").order("dias_mora",{ascending:false}).range(desde, desde+999);
       if(error){
         $("#alrKpis").innerHTML=""; $("#alrAviso").innerHTML="";
-        $("#alrLista").innerHTML=`<div class="empty">No se pudieron cargar las alertas: ${esc(errMsg(error))}<br><span style="font-size:13px">¿Ya se corrió el SQL del paso 19 en Supabase?</span></div>`;
+        $("#alrLista").innerHTML=`<div class="empty">No se pudieron cargar las alertas: ${esc(errMsg(error))}<br><span style="font-size:13px">Intenta de nuevo en unos minutos.</span></div>`;
         return;
       }
       todo=todo.concat(data||[]); if(!data || data.length<1000) break; desde+=1000;
@@ -1984,7 +1984,7 @@
       <div class="al-datos">
         <span>⏱ <b>${a.dias_mora} días</b> de atraso</span>
         <span>Desde <b>${fechaC(a.mora_desde)}</b>${a.metodo==="estimado"?' <span class="muted" title="Sin mensualidad o 1ª mensualidad: se cuenta un mes después del último pago">(estimado)</span>':""}</span>
-        <span><b>${a.meses_mora}</b> ${a.meses_mora===1?"mensualidad":"mensualidades"} sin cubrir</span>
+        <span>${a.metodo==="estimado" ? `<b>${a.meses_mora}</b> ${a.meses_mora===1?"mes":"meses"} sin pagar` : `<b>${a.meses_mora}</b> ${a.meses_mora===1?"mensualidad":"mensualidades"} sin cubrir`}</span>
         ${a.adeudo_estimado!=null?`<span>Adeudo ≈ <b>${money(a.adeudo_estimado)}</b></span>`:""}
         <span>Último pago: <b>${fechaC(a.ultimo_pago)}</b></span>
         <span>Saldo: <b>${money(a.saldo)}</b></span>
